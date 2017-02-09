@@ -1,0 +1,9 @@
+{
+    "db": {
+        "url": "postgres://go:go@docker/go?sslmode=disable"
+    },
+    "server": {
+        "host": "localhost",
+        "port": "3333"
+    }
+}

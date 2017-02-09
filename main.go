@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/ChristianNorbertBraun/seaweed-banking-backend/config"
 	"github.com/ChristianNorbertBraun/seaweed-banking-backend/database"
 	_ "github.com/mattes/migrate/driver/postgres"
 	"github.com/mattes/migrate/migrate"
@@ -15,9 +16,18 @@ import (
 )
 
 var routes = flag.Bool("routes", false, "Generate router documentation")
+var configPath = flag.String("config", "", "Path to json formated config")
 
 func init() {
 	flag.Parse()
+	if *configPath == "" && !*routes {
+		log.Fatal("Config path is needed!")
+	} else {
+		err := config.Parse(*configPath)
+		if err != nil {
+			log.Fatalf("Unable to parse config from: %s because: %s", *configPath, err)
+		}
+	}
 	database.Configure()
 }
 
@@ -29,7 +39,7 @@ func main() {
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 
-	allErrors, ok := migrate.UpSync("postgres://go:go@docker/go?sslmode=disable", "./data/migration")
+	allErrors, ok := migrate.UpSync(config.Configuration.Db.URL, "./data/migration")
 	if !ok {
 		log.Println("Unable to do migration for reasons:")
 		for _, err := range allErrors {
@@ -60,5 +70,6 @@ func main() {
 		return
 	}
 
-	http.ListenAndServe("localhost:3333", r)
+	serverURL := config.Configuration.Server.Host + ":" + config.Configuration.Server.Port
+	http.ListenAndServe(serverURL, r)
 }
