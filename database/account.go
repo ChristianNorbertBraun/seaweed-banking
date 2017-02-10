@@ -1,6 +1,8 @@
 package database
 
 import (
+	"database/sql"
+	"fmt"
 	"log"
 
 	"github.com/ChristianNorbertBraun/seaweed-banking-backend/model"
@@ -12,8 +14,9 @@ func ReadAccount(bic string, iban string) (*model.Account, error) {
 	account := model.Account{}
 
 	if err := Connection.
-		QueryRow("SELECT bic, iban, balance FROM accountbalance WHERE iban = $1 AND bic = $2", bic, iban).
-		Scan(&account.BIC, &account.IBAN, &account.Balance); err != nil {
+		QueryRow("SELECT bic, iban, balance FROM accountbalance WHERE bic = $1 AND iban = $2",
+			bic,
+			iban).Scan(&account.BIC, &account.IBAN, &account.Balance); err != nil {
 		log.Printf("Unable to read accounts with bic %s and iban %s: %s", bic, iban, err)
 		return nil, err
 	}
@@ -44,13 +47,63 @@ func ReadAccounts() ([]*model.Account, error) {
 	return accounts, nil
 }
 
+// UpdateAccountBalance takes a transaction and applies the
+// transaction value to the given account
+//
+// If the the transaction value would make the account balance go below zero
+// there will be returned an error an the transaction will be canceld
+func UpdateAccountBalance(transaction model.Transaction) error {
+	account := model.Account{}
+	tx, err := Connection.Begin()
+	if err != nil {
+
+		return err
+	}
+	defer rollback(err, tx)
+
+	row := tx.QueryRow("SELECT bic, iban, balance FROM accountbalance WHERE bic = $1 AND IBAN = $2",
+		transaction.BIC,
+		transaction.IBAN)
+	if err = row.Scan(&account.BIC, &account.IBAN, &account.Balance); err != nil {
+		return err
+	}
+
+	if (account.Balance + transaction.ValueInSmallestUnit) < 0 {
+		err = fmt.Errorf("Tried to withdraw %d from account bic: %s iban: %s with balance: %d",
+			transaction.ValueInSmallestUnit,
+			transaction.BIC,
+			transaction.IBAN,
+			account.Balance)
+
+		return err
+	}
+
+	_, err = tx.Exec("UPDATE accountbalance SET balance = $1 where bic = $2 AND iban = $3",
+		(account.Balance + transaction.ValueInSmallestUnit),
+		transaction.BIC,
+		transaction.IBAN)
+
+	return err
+}
+
 // CreateAccount creates an account with the given data
 func CreateAccount(account model.Account) error {
-	if err := Connection.QueryRow("INSERT INTO accountbalance(bic, iban, balance) VALUES ($1, $2, $3)",
-		account.BIC, account.IBAN, account.Balance).Scan(); err != nil {
+	if _, err := Connection.Exec("INSERT INTO accountbalance(bic, iban, balance) VALUES ($1, $2, $3)",
+		account.BIC,
+		account.IBAN,
+		account.Balance); err != nil {
 		log.Printf("Unable to create account %s", err)
 		return err
 	}
 
 	return nil
+}
+
+func rollback(err error, tx *sql.Tx) {
+	if err != nil {
+		tx.Rollback()
+
+		return
+	}
+	err = tx.Commit()
 }

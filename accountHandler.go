@@ -40,12 +40,17 @@ func GetAllAccounts(w http.ResponseWriter, r *http.Request) {
 func CreateAccount(w http.ResponseWriter, r *http.Request) {
 	account := model.Account{}
 
-	if err := render.Bind(r.Body, account); err != nil {
+	if err := render.Bind(r.Body, &account); err != nil {
 		render.Status(r, http.StatusBadRequest)
 		render.JSON(w, r, http.StatusText(http.StatusBadRequest))
 		return
 	}
 
+	if err := database.CreateAccount(account); err != nil {
+		render.Status(r, http.StatusConflict)
+		render.JSON(w, r, http.StatusText(http.StatusConflict))
+		return
+	}
 	render.Status(r, http.StatusCreated)
 	render.JSON(w, r, account)
 }
