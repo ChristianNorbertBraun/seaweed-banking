@@ -15,6 +15,9 @@ type Config struct {
 		Host string `json:"host"`
 		Port string `json:"port"`
 	} `json:"server"`
+	Seaweed struct {
+		FilerURL string `json:"filerUrl"`
+	} `json:"seaweed"`
 }
 
 // Configuration is the actual configuration for the project

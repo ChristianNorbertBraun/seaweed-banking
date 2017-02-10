@@ -5,5 +5,8 @@
     "server": {
         "host": "localhost",
         "port": "3333"
+    },
+    "seaweed": {
+        "filerUrl": "http://docker:8888"
     }
 }
