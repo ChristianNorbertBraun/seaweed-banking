@@ -4,5 +4,5 @@ package model
 type Account struct {
 	BIC     string `json:"bic"`
 	IBAN    string `json:"iban"`
-	Balance int64  `json:"balance"`
+	Balance int32  `json:"balance"`
 }

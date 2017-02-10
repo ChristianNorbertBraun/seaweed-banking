@@ -6,13 +6,20 @@ import (
 
 	"time"
 
+	"github.com/ChristianNorbertBraun/seaweed-banking-backend/database"
 	"github.com/ChristianNorbertBraun/seaweed-banking-backend/model"
 	"github.com/pressly/chi/render"
 )
 
 // GetTransaction returns a demo transaction for testing purposes
 func GetTransaction(w http.ResponseWriter, r *http.Request) {
-	transaction := model.Transaction{BIC: "BIC", IBAN: "IBAN", BookingDate: time.Now(), Currency: "EUR", ValueInSmallestUnit: 100, IntendedUse: "Nothing"}
+	transaction := model.Transaction{
+		BIC:                 "BIC",
+		IBAN:                "IBAN",
+		BookingDate:         time.Now(),
+		Currency:            "EUR",
+		ValueInSmallestUnit: 100,
+		IntendedUse:         "Nothing"}
 
 	render.JSON(w, r, transaction)
 }
@@ -31,6 +38,11 @@ func CreateTransactionAndUpdateBalance(w http.ResponseWriter, r *http.Request) {
 		render.Status(r, http.StatusBadRequest)
 		render.JSON(w, r, http.StatusText(http.StatusBadRequest))
 	} else {
+		if err := database.UpdateAccountBalance(transaction); err != nil {
+			render.Status(r, http.StatusBadRequest)
+			render.JSON(w, r, http.StatusText(http.StatusBadRequest))
+		}
+
 		render.Status(r, http.StatusCreated)
 		render.JSON(w, r, transaction)
 	}
