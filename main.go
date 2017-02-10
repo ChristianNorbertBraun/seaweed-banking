@@ -8,6 +8,7 @@ import (
 
 	"github.com/ChristianNorbertBraun/seaweed-banking-backend/config"
 	"github.com/ChristianNorbertBraun/seaweed-banking-backend/database"
+	"github.com/ChristianNorbertBraun/seaweed-banking-backend/handler"
 	_ "github.com/mattes/migrate/driver/postgres"
 	"github.com/mattes/migrate/migrate"
 	"github.com/pressly/chi"
@@ -49,15 +50,15 @@ func main() {
 	}
 
 	r.Route("/accounts", func(r chi.Router) {
-		r.Get("/", GetAllAccounts)
-		r.Post("/", CreateAccount)
+		r.Get("/", handler.GetAllAccounts)
+		r.Post("/", handler.CreateAccount)
 
 		r.Route("/:bic/:iban", func(r chi.Router) {
-			r.Get("/", GetAccount)
+			r.Get("/", handler.GetAccount)
 
 			r.Route("/transactions", func(r chi.Router) {
-				r.Get("/", GetTransaction)
-				r.Post("/", CreateTransaction)
+				r.Get("/", handler.GetTransaction)
+				r.Post("/", handler.CreateTransaction)
 			})
 		})
 	})

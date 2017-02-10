@@ -16,7 +16,9 @@ type Config struct {
 		Port string `json:"port"`
 	} `json:"server"`
 	Seaweed struct {
-		FilerURL string `json:"filerUrl"`
+		FilerURL      string `json:"filerUrl"`
+		AccountFolder string `json:"accountFolder"`
+		BookFolder    string `json:"bookFolder"`
 	} `json:"seaweed"`
 }
 

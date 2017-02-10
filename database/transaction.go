@@ -9,6 +9,7 @@ import (
 
 	"fmt"
 
+	"github.com/ChristianNorbertBraun/seaweed-banking-backend/config"
 	"github.com/ChristianNorbertBraun/seaweed-banking-backend/model"
 )
 
@@ -26,7 +27,10 @@ func CreateTransaction(transaction model.Transaction) error {
 
 	err = filer.Create(&buffer,
 		filename,
-		fmt.Sprintf("%s/%s", transaction.BIC, transaction.IBAN))
+		fmt.Sprintf("%s/%s/%s",
+			config.Configuration.Seaweed.BookFolder,
+			transaction.BIC,
+			transaction.IBAN))
 
 	if err != nil {
 		return err
