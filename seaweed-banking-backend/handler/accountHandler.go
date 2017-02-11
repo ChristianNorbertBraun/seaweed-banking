@@ -3,8 +3,8 @@ package handler
 import (
 	"net/http"
 
-	"github.com/ChristianNorbertBraun/seaweed-banking-backend/database"
-	"github.com/ChristianNorbertBraun/seaweed-banking-backend/model"
+	"github.com/ChristianNorbertBraun/seaweed-banking/seaweed-banking-backend/database"
+	"github.com/ChristianNorbertBraun/seaweed-banking/seaweed-banking-backend/model"
 	"github.com/pressly/chi"
 	"github.com/pressly/chi/render"
 )

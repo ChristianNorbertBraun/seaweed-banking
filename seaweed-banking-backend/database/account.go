@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/ChristianNorbertBraun/seaweed-banking-backend/model"
+	"github.com/ChristianNorbertBraun/seaweed-banking/seaweed-banking-backend/model"
 )
 
 // ReadAccount returns for a given bic and iban an account or an error if there

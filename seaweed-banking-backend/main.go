@@ -6,9 +6,9 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/ChristianNorbertBraun/seaweed-banking-backend/config"
-	"github.com/ChristianNorbertBraun/seaweed-banking-backend/database"
-	"github.com/ChristianNorbertBraun/seaweed-banking-backend/handler"
+	"github.com/ChristianNorbertBraun/seaweed-banking/seaweed-banking-backend/config"
+	"github.com/ChristianNorbertBraun/seaweed-banking/seaweed-banking-backend/database"
+	"github.com/ChristianNorbertBraun/seaweed-banking/seaweed-banking-backend/handler"
 	_ "github.com/mattes/migrate/driver/postgres"
 	"github.com/mattes/migrate/migrate"
 	"github.com/pressly/chi"
@@ -66,7 +66,7 @@ func main() {
 	if *routes {
 		// fmt.Println(docgen.JSONRoutesDoc(r))
 		fmt.Println(docgen.MarkdownRoutesDoc(r, docgen.MarkdownOpts{
-			ProjectPath: "github.com/ChristianNorbertBraun/seaweed-banking-backend",
+			ProjectPath: "github.com/ChristianNorbertBraun/seaweed-banking/seaweed-banking-backend",
 			Intro:       "Welcome to the seaweed-banking-backend generated docs.",
 		}))
 		return

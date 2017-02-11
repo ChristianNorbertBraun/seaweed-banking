@@ -5,7 +5,7 @@ import (
 	"log"
 
 	weedharvester "github.com/ChristianNorbertBraun/Weedharvester"
-	"github.com/ChristianNorbertBraun/seaweed-banking-backend/config"
+	"github.com/ChristianNorbertBraun/seaweed-banking/seaweed-banking-backend/config"
 )
 
 // Connection contains the open db connection

@@ -9,8 +9,8 @@ import (
 
 	"fmt"
 
-	"github.com/ChristianNorbertBraun/seaweed-banking-backend/config"
-	"github.com/ChristianNorbertBraun/seaweed-banking-backend/model"
+	"github.com/ChristianNorbertBraun/seaweed-banking/seaweed-banking-backend/config"
+	"github.com/ChristianNorbertBraun/seaweed-banking/seaweed-banking-backend/model"
 )
 
 //CreateTransaction creates a transaction within the given bic and iban
