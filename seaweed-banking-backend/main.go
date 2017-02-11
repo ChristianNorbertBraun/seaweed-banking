@@ -33,7 +33,6 @@ func init() {
 }
 
 func main() {
-
 	r := chi.NewRouter()
 
 	r.Use(middleware.RequestID)
@@ -64,7 +63,6 @@ func main() {
 	})
 
 	if *routes {
-		// fmt.Println(docgen.JSONRoutesDoc(r))
 		fmt.Println(docgen.MarkdownRoutesDoc(r, docgen.MarkdownOpts{
 			ProjectPath: "github.com/ChristianNorbertBraun/seaweed-banking/seaweed-banking-backend",
 			Intro:       "Welcome to the seaweed-banking-backend generated docs.",
@@ -75,5 +73,6 @@ func main() {
 	serverURL := config.Configuration.Server.Host +
 		":" +
 		config.Configuration.Server.Port
+
 	http.ListenAndServe(serverURL, r)
 }

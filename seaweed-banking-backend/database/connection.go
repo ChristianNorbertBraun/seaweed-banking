@@ -12,7 +12,7 @@ import (
 var Connection *sql.DB
 var filer weedharvester.Filer
 
-// Configure sets the db url
+// Configure sets the db urls
 func Configure() {
 	configureDb()
 	configureSeaweedFiler()

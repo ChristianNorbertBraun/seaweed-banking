@@ -12,7 +12,6 @@ const (
 )
 
 // Transaction represents a complete transaction from one account
-// to an other
 type Transaction struct {
 	IBAN                string    `json:"iban"`
 	BIC                 string    `json:"bic"`
