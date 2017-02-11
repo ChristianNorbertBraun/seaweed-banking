@@ -1,7 +1,7 @@
 version: '2.1'
 services:
   db:
-    container_name: seaweed-backend-db
+    container_name: backend-postgres
     image: postgres:9.6
     environment:
       - POSTGRES_DATABASE=go
@@ -11,10 +11,15 @@ services:
       - 5432:5432
       - 4222:4222
   seaweed:
-    container_name: seaweedfs
+    container_name: seaweedf
     image: chrislusf/seaweedfs
     ports:
       - 8888:8888
       - 9333:9333
       - 8080:8080
     command: 'server -master.port=9333 -volume.port=8080 -filer=true -volume.publicUrl http://docker:8080'
+  mongo:
+    container_name: account-updater-mongo
+    image: mongo
+    ports:
+      - 27017:27017
