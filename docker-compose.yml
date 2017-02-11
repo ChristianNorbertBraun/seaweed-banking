@@ -9,11 +9,6 @@ services:
       - POSTGRESS_PASSWORD=go
     ports:
       - 5432:5432
-  nats:
-    container_name: nats-streaming
-    image: nats-streaming:latest
-    ports:
-      - 8222:8222
       - 4222:4222
   seaweed:
     container_name: seaweedfs
