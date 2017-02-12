@@ -1,11 +1,20 @@
 package handler
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 
 	"time"
 
+	"io"
+	"io/ioutil"
+
+	"errors"
+
+	"bytes"
+
+	"github.com/ChristianNorbertBraun/seaweed-banking/seaweed-banking-backend/config"
 	"github.com/ChristianNorbertBraun/seaweed-banking/seaweed-banking-backend/database"
 	"github.com/ChristianNorbertBraun/seaweed-banking/seaweed-banking-backend/model"
 	"github.com/pressly/chi/render"
@@ -52,16 +61,59 @@ func CreateTransactionAndUpdateBalance(w http.ResponseWriter, r *http.Request) {
 // CreateTransaction checks the transaction
 func CreateTransaction(w http.ResponseWriter, r *http.Request) {
 	transaction := model.Transaction{}
-	if err := render.Bind(r.Body, &transaction); err != nil {
+	data, err := ioutil.ReadAll(r.Body)
+	if err != nil {
 		render.Status(r, http.StatusBadRequest)
 		render.JSON(w, r, err.Error())
+
 		return
 	}
+
+	if err := render.Bind(bytes.NewBuffer(data), &transaction); err != nil {
+		render.Status(r, http.StatusBadRequest)
+		render.JSON(w, r, err.Error())
+
+		return
+	}
+
+	transaction.BookingDate = time.Now().UTC()
 
 	if err := database.CreateTransaction(transaction); err != nil {
 		render.Status(r, http.StatusBadRequest)
 		render.JSON(w, r, http.StatusText(http.StatusBadRequest))
+
+		return
+	}
+
+	if err := sendTransactionToUpdater(bytes.NewBuffer(data)); err != nil {
+		render.Status(r, http.StatusBadRequest)
+		render.JSON(w, r, err.Error())
+
+		return
 	}
 	render.Status(r, http.StatusCreated)
 	render.JSON(w, r, transaction)
+}
+
+func sendTransactionToUpdater(r io.Reader) error {
+	data, err := ioutil.ReadAll(r)
+	url := fmt.Sprintf("%s:%s/updates",
+		config.Configuration.Updater.Host,
+		config.Configuration.Updater.Port)
+
+	if err != nil {
+		return err
+	}
+
+	response, err := http.Post(url, "application/json", bytes.NewBuffer(data))
+
+	if err != nil {
+		return err
+	}
+
+	if response.StatusCode >= 300 {
+		return errors.New("Bad Statuscode while sending transaction update")
+	}
+
+	return nil
 }
