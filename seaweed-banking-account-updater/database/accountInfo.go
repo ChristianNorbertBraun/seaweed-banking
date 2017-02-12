@@ -40,7 +40,7 @@ func GetLatestAccountInfo(bic string, iban string) (*model.AccountInfo, error) {
 
 // CreateAccountInfo creates a new accountinfo with the oldest Transaction
 // as its name
-func CreateAccountInfo(accountInfo model.AccountInfo) error {
+func CreateAccountInfo(accountInfo *model.AccountInfo) error {
 	buffer := bytes.Buffer{}
 	path := fmt.Sprintf("%s/%s/%s",
 		config.Configuration.Seaweed.AccountFolder,

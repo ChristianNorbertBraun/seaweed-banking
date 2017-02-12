@@ -5,13 +5,13 @@ import (
 	"github.com/ChristianNorbertBraun/seaweed-banking/seaweed-banking-account-updater/model"
 )
 
-var collectionName = "updates"
+var updateCollection = "updates"
 
 // InsertUpdate creates or updates an update object in the update
 // collection
 func InsertUpdate(update *model.Update) error {
 	_, err := session.DB(config.Configuration.Db.DBName).
-		C(collectionName).
+		C(updateCollection).
 		UpsertId(update.ID, update)
 
 	return err
@@ -21,7 +21,7 @@ func InsertUpdate(update *model.Update) error {
 func FindAllUpdates() ([]*model.Update, error) {
 	updates := []*model.Update{}
 	err := session.DB(config.Configuration.Db.DBName).
-		C(collectionName).
+		C(updateCollection).
 		Find(nil).
 		All(&updates)
 
@@ -35,6 +35,6 @@ func FindAllUpdates() ([]*model.Update, error) {
 // DeleteUpdate deletes the update for the given bic and iban
 func DeleteUpdate(bic string, iban string) error {
 	return session.DB(config.Configuration.Db.DBName).
-		C(collectionName).
+		C(updateCollection).
 		RemoveId(bic + iban)
 }

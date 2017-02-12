@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 
-	"bytes"
 	"encoding/json"
 
 	weedharvester "github.com/ChristianNorbertBraun/Weedharvester"
@@ -14,7 +13,7 @@ import (
 
 //GetAllTransactionsForAccountAfter fetches all transaction from seaweed which occured after
 // the given time as a string. The time has to be formated in time.RFC3339Nano
-func GetAllTransactionsForAccountAfter(bic string, iban string, time string) ([]*model.Transaction, error) {
+func GetAllTransactionsForAccountAfter(bic string, iban string, time string) (model.Transactions, error) {
 	path := fmt.Sprintf("%s/%s/%s",
 		config.Configuration.Seaweed.BookFolder,
 		bic,
@@ -28,10 +27,10 @@ func GetAllTransactionsForAccountAfter(bic string, iban string, time string) ([]
 	return readCompleteDirectory(transactionsInDirectory)
 }
 
-func readCompleteDirectory(directory *weedharvester.Directory) ([]*model.Transaction, error) {
-	transactions := make([]*model.Transaction, len(directory.Files))
+func readCompleteDirectory(directory *weedharvester.Directory) (model.Transactions, error) {
+	transactions := model.Transactions{}
 
-	for index, file := range directory.Files {
+	for _, file := range directory.Files {
 		reader, err := filer.Read(file.Name, directory.Directory)
 		if err != nil {
 			return nil, err
@@ -41,7 +40,7 @@ func readCompleteDirectory(directory *weedharvester.Directory) ([]*model.Transac
 			return nil, err
 		}
 
-		transactions[index] = transaction
+		transactions = append(transactions, transaction)
 	}
 
 	return transactions, nil
@@ -49,9 +48,8 @@ func readCompleteDirectory(directory *weedharvester.Directory) ([]*model.Transac
 
 func parseTransaction(reader io.Reader) (*model.Transaction, error) {
 	transaction := model.Transaction{}
-	buffer := bytes.Buffer{}
 
-	if err := json.NewDecoder(&buffer).Decode(&transaction); err != nil {
+	if err := json.NewDecoder(reader).Decode(&transaction); err != nil {
 		return nil, err
 	}
 

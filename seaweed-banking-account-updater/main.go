@@ -6,9 +6,12 @@ import (
 	"log"
 	"net/http"
 
+	"time"
+
 	"github.com/ChristianNorbertBraun/seaweed-banking/seaweed-banking-account-updater/config"
 	"github.com/ChristianNorbertBraun/seaweed-banking/seaweed-banking-account-updater/database"
 	"github.com/ChristianNorbertBraun/seaweed-banking/seaweed-banking-account-updater/handler"
+	"github.com/ChristianNorbertBraun/seaweed-banking/seaweed-banking-account-updater/worker"
 	"github.com/pressly/chi"
 	"github.com/pressly/chi/docgen"
 	"github.com/pressly/chi/middleware"
@@ -29,7 +32,9 @@ func init() {
 	}
 
 	database.Configure()
+	worker.SetUpUpdateWorker(10 * time.Second)
 }
+
 func main() {
 	r := chi.NewRouter()
 

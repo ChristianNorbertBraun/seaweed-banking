@@ -20,3 +20,18 @@ type Transaction struct {
 	ValueInSmallestUnit int32     `json:"valueInSmallestUnit"`
 	IntendedUse         string    `json:"intendedUse"`
 }
+
+// Transactions is an array of Transaction
+type Transactions []*Transaction
+
+func (slice Transactions) Len() int {
+	return len(slice)
+}
+
+func (slice Transactions) Less(i, j int) bool {
+	return slice[i].BookingDate.Before(slice[j].BookingDate)
+}
+
+func (slice Transactions) Swap(i, j int) {
+	slice[i], slice[j] = slice[j], slice[i]
+}
