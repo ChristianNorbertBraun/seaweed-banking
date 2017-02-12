@@ -1,7 +1,6 @@
 package worker
 
 import (
-	"fmt"
 	"log"
 	"time"
 
@@ -16,8 +15,11 @@ func SetUpUpdateWorker(duration time.Duration) {
 	ticker = time.NewTicker(duration)
 	go func() {
 		for t := range ticker.C {
-			fmt.Println("Start Update at: ", t)
+			log.Println("-------------------------------------------------------------")
+			log.Println("Start Update at: ", t)
+
 			runUpdate()
+			log.Println("-------------------------------------------------------------")
 		}
 	}()
 }
@@ -39,6 +41,7 @@ func runUpdate() {
 
 	for _, update := range updates {
 		accountInfo, err := database.GetLatestAccountInfo(update.BIC, update.IBAN)
+
 		log.Printf("Working on update for bic %s iban %s", update.BIC, update.IBAN)
 
 		if err != nil {
