@@ -32,6 +32,7 @@ func NewAccountInfo(bic string, iban string, balance int32) *AccountInfo {
 // the oldest and latest transaction date
 func (ai *AccountInfo) AddTransaction(transaction *Transaction) (bool, *AccountInfo) {
 	ai.mutex.Lock()
+	defer ai.mutex.Unlock()
 	if ai.Transactions.Len() < MaxTransactionsPerAccountInfo {
 		ai.Transactions = append(ai.Transactions, transaction)
 		ai.Balance += transaction.ValueInSmallestUnit
@@ -46,8 +47,6 @@ func (ai *AccountInfo) AddTransaction(transaction *Transaction) (bool, *AccountI
 
 		return true, nil
 	}
-
-	ai.mutex.Unlock()
 
 	accountInfo := NewAccountInfo(ai.BIC, ai.IBAN, ai.Balance)
 	accountInfo.AddTransaction(transaction)

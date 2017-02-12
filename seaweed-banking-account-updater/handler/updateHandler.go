@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/ChristianNorbertBraun/seaweed-banking/seaweed-banking-account-updater/database"
@@ -31,6 +32,8 @@ func CreateUpdate(w http.ResponseWriter, r *http.Request) {
 		render.JSON(w, r, err.Error())
 		return
 	}
+
+	log.Println("TransactionDate: ", transaction)
 
 	update := model.NewUpdate(transaction)
 	if err := database.InsertUpdate(update); err != nil {

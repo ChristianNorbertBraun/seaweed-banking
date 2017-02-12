@@ -53,5 +53,5 @@ func parseTransaction(reader io.Reader) (*model.Transaction, error) {
 		return nil, err
 	}
 
-	return &transaction, nil
+return &transaction, nil
 }

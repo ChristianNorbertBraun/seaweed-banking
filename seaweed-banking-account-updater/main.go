@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-
 	"time"
 
 	"github.com/ChristianNorbertBraun/seaweed-banking/seaweed-banking-account-updater/config"
@@ -34,7 +33,6 @@ func init() {
 	database.Configure()
 	worker.SetUpUpdateWorker(10 * time.Second)
 }
-
 func main() {
 	r := chi.NewRouter()
 

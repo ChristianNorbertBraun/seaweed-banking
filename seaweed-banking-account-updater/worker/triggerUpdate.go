@@ -48,6 +48,8 @@ func runUpdate() {
 		}
 
 		latestTransactionTime, _ := time.Parse(time.RFC3339Nano, accountInfo.LatestTransaction)
+		log.Println("Accountinfo time: ", accountInfo.LatestTransaction)
+		log.Println("Update last transaction: ", update.LastTransaction.Format(time.RFC3339Nano))
 		if latestTransactionTime.
 			After(update.LastTransaction) {
 			log.Printf("AccountInfo already up to date")
@@ -58,10 +60,12 @@ func runUpdate() {
 			}
 		}
 
+		log.Println("About to get all Transactions after")
 		transactionsToUpdate, err := database.GetAllTransactionsForAccountAfter(
 			update.BIC,
 			update.IBAN,
 			accountInfo.LatestTransaction)
+		log.Println("Got all Transactions: ", len(transactionsToUpdate))
 
 		if err != nil {
 			log.Println("Unable to fetch transactions after: ", accountInfo.LatestTransaction)
