@@ -7,12 +7,11 @@ import (
 
 	"time"
 
-	"io"
-	"io/ioutil"
-
 	"errors"
 
 	"bytes"
+
+	"encoding/json"
 
 	"github.com/ChristianNorbertBraun/seaweed-banking/seaweed-banking-backend/config"
 	"github.com/ChristianNorbertBraun/seaweed-banking/seaweed-banking-backend/database"
@@ -61,15 +60,8 @@ func CreateTransactionAndUpdateBalance(w http.ResponseWriter, r *http.Request) {
 // CreateTransaction checks the transaction
 func CreateTransaction(w http.ResponseWriter, r *http.Request) {
 	transaction := model.Transaction{}
-	data, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		render.Status(r, http.StatusBadRequest)
-		render.JSON(w, r, err.Error())
 
-		return
-	}
-
-	if err := render.Bind(bytes.NewBuffer(data), &transaction); err != nil {
+	if err := render.Bind(r.Body, &transaction); err != nil {
 		render.Status(r, http.StatusBadRequest)
 		render.JSON(w, r, err.Error())
 
@@ -85,7 +77,7 @@ func CreateTransaction(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := sendTransactionToUpdater(bytes.NewBuffer(data)); err != nil {
+	if err := sendTransactionToUpdater(transaction); err != nil {
 		render.Status(r, http.StatusBadRequest)
 		render.JSON(w, r, err.Error())
 
@@ -95,17 +87,17 @@ func CreateTransaction(w http.ResponseWriter, r *http.Request) {
 	render.JSON(w, r, transaction)
 }
 
-func sendTransactionToUpdater(r io.Reader) error {
-	data, err := ioutil.ReadAll(r)
+func sendTransactionToUpdater(transaction model.Transaction) error {
+	buffer := bytes.Buffer{}
+
 	url := fmt.Sprintf("%s:%s/updates",
 		config.Configuration.Updater.Host,
 		config.Configuration.Updater.Port)
 
-	if err != nil {
+	if err := json.NewEncoder(&buffer).Encode(transaction); err != nil {
 		return err
 	}
-
-	response, err := http.Post(url, "application/json", bytes.NewBuffer(data))
+	response, err := http.Post(url, "application/json", &buffer)
 
 	if err != nil {
 		return err
