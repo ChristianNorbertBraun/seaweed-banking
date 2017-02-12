@@ -5,6 +5,7 @@ package model
 type AccountInfo struct {
 	IBAN              string        `json:"iban"`
 	BIC               string        `json:"bic"`
+	Balance           int32         `json:"balance"`
 	OldestTransaction string        `json:"oldestTransaction"`
 	LatestTransaction string        `json:"latestTransaction"`
 	Transactions      []Transaction `json:"transactions"`
