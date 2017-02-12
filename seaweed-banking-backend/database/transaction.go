@@ -16,7 +16,7 @@ import (
 //CreateTransaction creates a transaction within the given bic and iban
 func CreateTransaction(transaction model.Transaction) error {
 	buffer := bytes.Buffer{}
-	filename := time.Now().UTC().Format(time.RFC3339Nano)
+	filename := transaction.BookingDate.Format(time.RFC3339Nano)
 	err := json.NewEncoder(&buffer).Encode(transaction)
 
 	if err != nil {

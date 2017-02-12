@@ -41,6 +41,6 @@ func configureSeaweedFiler() {
 		log.Fatal("Could not connect to seaweed filer: ", err)
 	}
 
-	log.Println("Created filer for: ", config.Configuration.Seaweed.FilerURL)
+	log.Println("Connected to filer: ", config.Configuration.Seaweed.FilerURL)
 	filer = fil
 }

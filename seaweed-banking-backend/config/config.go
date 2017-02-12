@@ -20,6 +20,10 @@ type Config struct {
 		AccountFolder string `json:"accountFolder"`
 		BookFolder    string `json:"bookFolder"`
 	} `json:"seaweed"`
+	Updater struct {
+		Host string `json:"host"`
+		Port string `json:"port"`
+	} `json:"updater"`
 }
 
 // Configuration is the actual configuration for the project

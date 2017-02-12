@@ -2,9 +2,15 @@ package database
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"log"
 
+	"bytes"
+
+	"time"
+
+	"github.com/ChristianNorbertBraun/seaweed-banking/seaweed-banking-backend/config"
 	"github.com/ChristianNorbertBraun/seaweed-banking/seaweed-banking-backend/model"
 )
 
@@ -56,7 +62,6 @@ func UpdateAccountBalance(transaction model.Transaction) error {
 	account := model.Account{}
 	tx, err := Connection.Begin()
 	if err != nil {
-
 		return err
 	}
 	defer rollback(err, tx)
@@ -88,6 +93,12 @@ func UpdateAccountBalance(transaction model.Transaction) error {
 
 // CreateAccount creates an account with the given data
 func CreateAccount(account model.Account) error {
+	tx, err := Connection.Begin()
+	if err != nil {
+		return err
+	}
+	defer rollback(err, tx)
+
 	if _, err := Connection.Exec("INSERT INTO accountbalance(bic, iban, balance) VALUES ($1, $2, $3)",
 		account.BIC,
 		account.IBAN,
@@ -96,7 +107,30 @@ func CreateAccount(account model.Account) error {
 		return err
 	}
 
+	if err := createAccountInfo(account); err != nil {
+		log.Printf("Unable to create account info for bic %s, iban %s",
+			account.BIC,
+			account.IBAN)
+
+		return err
+	}
+
 	return nil
+}
+
+func createAccountInfo(account model.Account) error {
+	buffer := bytes.Buffer{}
+	fileName := time.Now().UTC().Format(time.RFC3339Nano)
+	path := fmt.Sprintf("%s/%s/%s",
+		config.Configuration.Seaweed.AccountFolder,
+		account.BIC,
+		account.IBAN)
+
+	if err := json.NewEncoder(&buffer).Encode(account); err != nil {
+		return err
+	}
+
+	return filer.Create(&buffer, fileName, path)
 }
 
 func rollback(err error, tx *sql.Tx) {
