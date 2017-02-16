@@ -1,7 +1,7 @@
 package database
 
 import (
-	"database/sql"
+	"database/sql/driver"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -133,7 +133,7 @@ func createAccountInfo(account model.Account) error {
 	return filer.Create(&buffer, fileName, path)
 }
 
-func rollback(err error, tx *sql.Tx) {
+func rollback(err error, tx driver.Tx) {
 	if err != nil {
 		tx.Rollback()
 
