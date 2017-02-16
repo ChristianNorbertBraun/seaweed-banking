@@ -10,6 +10,7 @@ type AccountInfo struct {
 	IBAN              string       `json:"iban"`
 	BIC               string       `json:"bic"`
 	Balance           int32        `json:"balance"`
+	Predeccessor      string       `json:"predeccessor"`
 	OldestTransaction string       `json:"oldestTransaction"`
 	LatestTransaction string       `json:"latestTransaction"`
 	Transactions      Transactions `json:"transactions"`
@@ -21,8 +22,8 @@ type AccountInfo struct {
 const MaxTransactionsPerAccountInfo = 10
 
 // NewAccountInfo creates a new accountInfo
-func NewAccountInfo(bic string, iban string, balance int32) *AccountInfo {
-	accountInfo := AccountInfo{BIC: bic, IBAN: iban, Balance: balance}
+func NewAccountInfo(bic string, iban string, balance int32, predeccessor string) *AccountInfo {
+	accountInfo := AccountInfo{BIC: bic, IBAN: iban, Balance: balance, Predeccessor: predeccessor}
 	accountInfo.Transactions = []*Transaction{}
 
 	return &accountInfo
@@ -48,7 +49,7 @@ func (ai *AccountInfo) AddTransaction(transaction *Transaction) (bool, *AccountI
 		return true, nil
 	}
 
-	accountInfo := NewAccountInfo(ai.BIC, ai.IBAN, ai.Balance)
+	accountInfo := NewAccountInfo(ai.BIC, ai.IBAN, ai.Balance, ai.OldestTransaction)
 	accountInfo.AddTransaction(transaction)
 
 	return false, accountInfo

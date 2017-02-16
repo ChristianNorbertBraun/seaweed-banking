@@ -53,7 +53,7 @@ func main() {
 		r.Post("/", handler.CreateAccount)
 
 		r.Route("/:bic/:iban", func(r chi.Router) {
-			r.Get("/", handler.GetAccount)
+			r.Get("/", handler.GetAccountInfo)
 
 			r.Route("/transactions", func(r chi.Router) {
 				r.Get("/", handler.GetTransaction)

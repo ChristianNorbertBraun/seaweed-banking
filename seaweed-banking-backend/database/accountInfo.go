@@ -1,0 +1,154 @@
+package database
+
+import (
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"time"
+
+	weedharvester "github.com/ChristianNorbertBraun/Weedharvester"
+	"github.com/ChristianNorbertBraun/seaweed-banking/seaweed-banking-backend/config"
+	"github.com/ChristianNorbertBraun/seaweed-banking/seaweed-banking-backend/model"
+)
+
+// EmptyIDError will be returned if there is no accountinfo for a given oldestTransaction
+var ErrEmptyID = errors.New("Can't find accountinfo for empty ID.")
+
+// GetAccountInfo returns a single accountinfo for the given bic and iban with the oldestTransaction as id
+func GetAccountInfo(bic string, iban string, oldestTransaction string) (*model.AccountInfo, error) {
+	if oldestTransaction == "" {
+		return nil, ErrEmptyID
+	}
+	path := fmt.Sprintf("%s/%s/%s",
+		config.Configuration.Seaweed.AccountFolder,
+		bic,
+		iban)
+	reader, err := filer.Read(oldestTransaction, path)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return parseAccountInfo(reader)
+}
+
+// GetAccountInfoFrom returns an accountinfo which holds all transactions from the given time
+// TODO massive refactoring
+func GetAccountInfoFrom(bic string, iban string, from time.Time) (*model.AccountInfo, error) {
+	path := fmt.Sprintf("%s/%s/%s",
+		config.Configuration.Seaweed.AccountFolder,
+		bic,
+		iban)
+
+	var accountInfo *model.AccountInfo
+	directory, err := filer.ReadDirectory(path, from.UTC().Format(time.RFC3339Nano))
+
+	if err != nil {
+		return nil, err
+	}
+
+	// No files found after given time
+	if len(directory.Files) == 0 {
+		accountInfo, err = GetLatestAccountInfo(bic, iban)
+		if err != nil {
+			return nil, err
+		}
+
+		transactionAfterFrom := accountInfo.GetTransactionsAfter(from)
+		return model.NewAccountInfo(bic, iban, accountInfo.Balance, transactionAfterFrom), nil
+	}
+
+	accountInfos, err := getAllAccountInfoFromDirectory(directory)
+
+	if err != nil {
+		return nil, err
+	}
+
+	predeccessorAccountInfo, err := GetAccountInfo(bic, iban, accountInfos[0].Predeccessor)
+	if err != nil && err != ErrEmptyID {
+		return nil, err
+	} else if err == ErrEmptyID {
+		accountInfo = createAccountInfoFromListOfAccountInfos(accountInfos, from)
+
+		return accountInfo, nil
+	}
+
+	accountInfos = append([]*model.AccountInfo{predeccessorAccountInfo}, accountInfos...)
+	accountInfo = createAccountInfoFromListOfAccountInfos(accountInfos, from)
+
+	return accountInfo, nil
+}
+
+// GetLatestAccountInfo returns the latest account info for a given
+func GetLatestAccountInfo(bic string, iban string) (*model.AccountInfo, error) {
+	path := fmt.Sprintf("%s/%s/%s",
+		config.Configuration.Seaweed.AccountFolder,
+		bic,
+		iban)
+	directory, err := filer.ReadDirectory(path, "")
+
+	if err != nil {
+		return nil, err
+	}
+
+	if len(directory.Files) == 0 {
+		return nil, fmt.Errorf("There is no latest accountInfo for %s", path)
+	}
+
+	latestAccountInfoFileName := directory.Files[len(directory.Files)-1].Name
+	latestAccountInfoJSON, err := filer.Read(latestAccountInfoFileName, path)
+
+	accountInfo, err := parseAccountInfo(latestAccountInfoJSON)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return accountInfo, nil
+}
+
+func getAllAccountInfoFromDirectory(directory *weedharvester.Directory) ([]*model.AccountInfo, error) {
+	accountInfos := []*model.AccountInfo{}
+
+	for _, file := range directory.Files {
+		data, err := filer.Read(file.Name, directory.Directory)
+		if err != nil {
+			return nil, err
+		}
+
+		accountInfo, err := parseAccountInfo(data)
+
+		if err != nil {
+			return nil, err
+		}
+
+		accountInfos = append(accountInfos, accountInfo)
+	}
+
+	return accountInfos, nil
+}
+
+func createAccountInfoFromListOfAccountInfos(accountInfos []*model.AccountInfo, after time.Time) *model.AccountInfo {
+	transactions := []*model.Transaction{}
+	lastAccountInfo := accountInfos[len(accountInfos)-1]
+
+	for _, accountInfo := range accountInfos {
+		transactions = append(transactions, accountInfo.GetTransactionsAfter(after)...)
+	}
+
+	return model.NewAccountInfo(lastAccountInfo.BIC,
+		lastAccountInfo.IBAN,
+		lastAccountInfo.Balance,
+		transactions)
+}
+
+func parseAccountInfo(reader io.Reader) (*model.AccountInfo, error) {
+	accountInfo := model.AccountInfo{}
+
+	if err := json.NewDecoder(reader).Decode(&accountInfo); err != nil {
+		return nil, err
+	}
+
+	return &accountInfo, nil
+}
