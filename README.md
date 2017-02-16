@@ -35,7 +35,7 @@ go run *.go --config config/path/config.json
 // default config
 go run *.go
 // custom config
-go run
+go run *.go --config config/path/config.json
 ```
 
 4. Now you are good to go.
