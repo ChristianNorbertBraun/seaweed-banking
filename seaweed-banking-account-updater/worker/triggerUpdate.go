@@ -20,7 +20,6 @@ func SetUpUpdateWorker(duration time.Duration) {
 			log.Println("Start Update at: ", t)
 
 			runUpdate()
-			log.Println("-------------------------------------------------------------")
 		}
 	}()
 }
@@ -44,7 +43,6 @@ func runUpdate() {
 		go runUpdateFor(update)
 	}
 
-	log.Println("Done with updating")
 }
 
 func runUpdateFor(update *model.Update) {
@@ -94,4 +92,5 @@ func runUpdateFor(update *model.Update) {
 	}
 
 	database.CreateAccountInfo(accountInfo)
+	log.Println("Done with updating for ", update.BIC, update.IBAN)
 }
