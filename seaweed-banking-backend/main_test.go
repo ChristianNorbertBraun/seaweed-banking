@@ -3,16 +3,18 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
+	"flag"
 	"fmt"
+	"log"
 	"math/rand"
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"strconv"
+	"strings"
 	"testing"
 	"time"
 
+	"github.com/ChristianNorbertBraun/seaweed-banking/seaweed-banking-backend/config"
 	"github.com/ChristianNorbertBraun/seaweed-banking/seaweed-banking-backend/handler"
 	"github.com/ChristianNorbertBraun/seaweed-banking/seaweed-banking-backend/model"
 	"github.com/gorilla/mux"
@@ -23,14 +25,10 @@ type fakeAccount struct {
 	transactions []model.Transaction
 }
 
+var testData []fakeAccount
 var r *mux.Router
 var writer *httptest.ResponseRecorder
-var accountRunes = []rune("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
-var NoOfTransactionsPerAccount = 1
-var NoOfFakeAccounts = 4
-var updaterInterval = 10
-
-var testData []fakeAccount
+var testConfigPath = flag.String("testConfig", "./data/conf/testconfig.json", "Path to json formated testconfig")
 
 func TestMain(m *testing.M) {
 	setUp()
@@ -40,23 +38,34 @@ func TestMain(m *testing.M) {
 }
 
 func setUp() {
+	flag.Parse()
+
+	err := config.ParseTestConfig(*testConfigPath)
+
+	if err != nil {
+		log.Fatalf("Unable to parse testconfig from: %s because: %s",
+			*configPath,
+			err)
+	}
+
 	r = mux.NewRouter()
 	r.HandleFunc("/accounts", handler.GetAllAccounts).Methods("GET")
 	r.HandleFunc("/accounts", handler.CreateAccount).Methods("POST")
 	r.HandleFunc("/accounts/{bic}/{iban}/transactions", handler.GetTransaction).Methods("GET")
 	r.HandleFunc("/accounts/{bic}/{iban}/transactions", handler.CreateTransaction).Methods("POST")
 	writer = httptest.NewRecorder()
+
 }
 
 func initTestData() {
 
-	for i := 0; i < NoOfFakeAccounts; i++ {
+	for i := 0; i < config.TestConfiguration.NoOfFakeAccounts; i++ {
 
 		var newFakeAccount fakeAccount
 
-		newFakeAccount.account.BIC = RandString(11)
-		newFakeAccount.account.IBAN = RandString(24)
-		newFakeAccount.account.Balance = 500
+		newFakeAccount.account.BIC = RandBIC()
+		newFakeAccount.account.IBAN = RandIBAN()
+		newFakeAccount.account.Balance = RandNumberWithRange(200, 10000)
 
 		testData = append(testData, newFakeAccount)
 	}
@@ -66,14 +75,13 @@ func initTestData() {
 *	TEST CASES
  */
 
-func TestAccountCreate(t *testing.T) {
-	// if cap(testData) > 0 {
+func TestAccountsCreate(t *testing.T) {
 
 	for _, data := range testData {
 		err := CreateAccount(data.account)
 
 		if err != nil {
-			t.Errorf("CreateAccount %v", err)
+			t.Error(err)
 		}
 	}
 
@@ -83,13 +91,12 @@ func TestAccountCreate(t *testing.T) {
 		err := VerifyAccount(data.account)
 
 		if err != nil {
-			t.Errorf("VerifyAccount %v", err)
+			t.Error(err)
 		}
 	}
 }
 
 func TestTransactionsCreate(t *testing.T) {
-	fmt.Println("Len :" + strconv.Itoa(len(testData)))
 
 	if len(testData) > 1 {
 
@@ -101,20 +108,20 @@ func TestTransactionsCreate(t *testing.T) {
 				newTransaction.BookingDate = time.Now()
 				newTransaction.Currency = model.EUR
 				newTransaction.IntendedUse = "testingTransactions"
-				newTransaction.ValueInSmallestUnit = RandTransactionUnit(testData[i].account.Balance)
+				newTransaction.ValueInSmallestUnit = RandNumberWithRange(0, int(testData[i].account.Balance))
 
 				err := CreateTransaction(testData[i].account, newTransaction)
 
 				if err != nil {
-					t.Errorf("CreateTransaction %v", err)
+					t.Error(err)
 				}
 
-				fmt.Printf("transaction created for %v \n", testData[i].account.IBAN)
+				testData[i+1].transactions = append(testData[i+1].transactions, newTransaction)
 			}
 		}
-
 	} else {
-		t.Errorf("We need at least 2 accounts for transactions, current number of accounts: %v", cap(testData))
+		t.Errorf("At least 2 accounts are necessary for transactions, current number of accounts: %v",
+			cap(testData))
 	}
 
 	WaitForUpdater()
@@ -124,7 +131,7 @@ func TestTransactionsCreate(t *testing.T) {
 			err := VerifyTransactions(testData[i].account)
 
 			if err != nil {
-				t.Errorf("VerifyAccount Error: %v", err)
+				t.Error(err)
 			}
 		}
 	}
@@ -141,13 +148,12 @@ func TestTransactionsCreate(t *testing.T) {
 //
 // func TestReadAllTransactions(t *testing.T) {
 // 	// TODO
-// 	// Readout All Transactions for every account parallel
+// 	// Readout All Transactions for every account parallel with benchmark
 // }
 
 /*
 *	HELPERS
  */
-
 func CreateAccount(account model.Account) (err error) {
 
 	b := new(bytes.Buffer)
@@ -157,7 +163,9 @@ func CreateAccount(account model.Account) (err error) {
 	r.ServeHTTP(writer, request)
 
 	if writer.Code != 200 && writer.Code != 201 {
-		err = errors.New(request.URL.String() + " Code: " + strconv.Itoa(writer.Code))
+		err = fmt.Errorf("CreateAccount: %v \nResponse Code: %v",
+			request.URL.String(),
+			writer.Code)
 		return
 	}
 
@@ -174,7 +182,9 @@ func CreateTransaction(account model.Account, transaction model.Transaction) (er
 	r.ServeHTTP(writer, request)
 
 	if writer.Code != 200 && writer.Code != 201 {
-		err = errors.New(request.URL.String() + " Code: " + strconv.Itoa(writer.Code))
+		err = fmt.Errorf("CreateTransaction: %v \nResponse Code: %v",
+			request.URL.String(),
+			writer.Code)
 		return
 	}
 
@@ -189,7 +199,9 @@ func GetAllAccounts() (readData []byte, err error) {
 	r.ServeHTTP(writer, request)
 
 	if writer.Code != 200 && writer.Code != 201 {
-		err = errors.New(request.URL.String() + " Code: " + strconv.Itoa(writer.Code))
+		err = fmt.Errorf("GetAllAccounts: %v \nResponse Code: %v",
+			request.URL.String(),
+			writer.Code)
 		readData = nil
 		return
 	}
@@ -205,7 +217,9 @@ func VerifyAccount(acc model.Account) (err error) {
 	r.ServeHTTP(writer, request)
 
 	if writer.Code != 200 && writer.Code != 201 {
-		err = errors.New(request.URL.String() + " Code: " + strconv.Itoa(writer.Code))
+		err = fmt.Errorf("VerifyAccount: %v \nResponse Code: %v",
+			request.URL.String(),
+			writer.Code)
 		return
 	}
 
@@ -220,57 +234,74 @@ func VerifyTransactions(account model.Account) (err error) {
 	r.ServeHTTP(writer, request)
 
 	if writer.Code != 200 && writer.Code != 201 {
-		err = errors.New(request.URL.String() + " Code: " + strconv.Itoa(writer.Code))
-
+		err = fmt.Errorf("VerifyTransactions: %v \n Response Code: %v",
+			request.URL.String(),
+			writer.Code)
 		return
 	}
-	//TODO Verifiy transactions
+
+	response := strings.Split(writer.Body.String(), "}")
+
+	var readTransactions []model.Transaction
+
+	for _, v := range response {
+		strTransaction := v + "}"
+		var trans model.Transaction
+		json.Unmarshal([]byte(strTransaction), trans)
+
+		readTransactions = append(readTransactions, trans)
+	}
+
+	for _, v := range testData {
+		for _, createdTransaction := range v.transactions {
+
+			found := false
+
+			for _, readTransaction := range readTransactions {
+
+				if createdTransaction == readTransaction {
+					found = true
+				}
+			}
+
+			if found == false {
+				err = fmt.Errorf("VerifyTransactions: Transaction: bic: %v iban: %v not found",
+					createdTransaction.BIC,
+					createdTransaction.IBAN)
+				return
+			}
+		}
+	}
+
 	err = nil
 	return
 }
 
 func WaitForUpdater() {
-	time.Sleep(time.Second * 10)
+	time.Sleep(time.Second * time.Duration(config.TestConfiguration.UpdaterInterval))
 }
 
 // generate Random String from accountRunes slice
-func RandString(n int) string {
-	b := make([]rune, n)
+func RandBIC() string {
+
+	bicRunes := []rune(config.TestConfiguration.BicRunes)
+
+	b := make([]rune, 11)
+	num := rand.New(rand.NewSource(time.Now().UnixNano()))
 
 	for i := range b {
-		b[i] = accountRunes[rand.Intn(len(accountRunes))]
+		b[i] = bicRunes[num.Intn(len(bicRunes))]
 	}
-
 	return string(b)
 }
 
-func RandIBAN(n int) {
-	//TODO
-
+func RandIBAN() string {
+	iban := "DE"
+	iban += fmt.Sprintf("%v%v", RandNumberWithRange(100000000, 999999999), RandNumberWithRange(100000000, 999999999))
+	return iban
 }
 
-func RandNumber(n int) int32 {
-	num := rand.New(rand.NewSource(time.Now().UnixNano()))
-	return int32(num.Intn(n))
+func RandNumberWithRange(low, hi int) int32 {
+	num := low + rand.Intn(hi-low)
+	return int32(num)
 }
-
-func RandTransactionUnit(max int32) int32 {
-	rand.Seed(time.Now().Unix())
-	unit := rand.Intn(int(max) - 0)
-	return int32(unit)
-}
-
-//
-// for j := 0; j < NoOfTransactionsPerAccount; j++ { // Parameterize noOfTransactions per account
-//
-// 	var newTransaction model.Transaction
-//
-// 	newTransaction.BIC = RandString(11)
-// 	newTransaction.IBAN = RandString(24)
-// 	newTransaction.BookingDate = time.Now()
-// 	newTransaction.Currency = model.EUR
-// 	newTransaction.IntendedUse = "BLUB"
-// 	newTransaction.ValueInSmallestUnit = 150
-//
-// 	newFakeAccount.transactions = append(newFakeAccount.transactions, newTransaction)
-// }
