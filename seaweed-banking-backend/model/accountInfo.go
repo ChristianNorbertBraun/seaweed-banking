@@ -8,9 +8,9 @@ type AccountInfo struct {
 	IBAN              string         `json:"iban"`
 	BIC               string         `json:"bic"`
 	Balance           int32          `json:"balance"`
-	Predeccessor      string         `json:"predeccessor"`
-	OldestTransaction string         `json:"oldestTransaction"`
-	LatestTransaction string         `json:"latestTransaction"`
+	Predeccessor      string         `json:"predeccessor,omitempty"`
+	OldestTransaction string         `json:"oldestTransaction,omitempty"`
+	LatestTransaction string         `json:"latestTransaction,omitempty"`
 	Transactions      []*Transaction `json:"transactions"`
 }
 
