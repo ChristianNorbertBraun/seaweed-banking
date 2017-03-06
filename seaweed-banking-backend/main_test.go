@@ -128,7 +128,7 @@ func TestTransactionsCreate(t *testing.T) {
 
 	for i := range testData {
 		if i > 0 {
-			err := VerifyTransactions(testData[i].account)
+			err := VerifyTransactions(testData[i])
 
 			if err != nil {
 				t.Error(err)
@@ -211,9 +211,9 @@ func GetAllAccounts() (readData []byte, err error) {
 	return
 }
 
-func VerifyAccount(acc model.Account) (err error) {
+func VerifyAccount(account model.Account) (err error) {
 
-	request, _ := http.NewRequest("GET", "/accounts/"+acc.BIC+"/"+acc.IBAN, nil)
+	request, _ := http.NewRequest("GET", "/accounts/"+account.BIC+"/"+account.IBAN, nil)
 	r.ServeHTTP(writer, request)
 
 	if writer.Code != 200 && writer.Code != 201 {
@@ -227,9 +227,9 @@ func VerifyAccount(acc model.Account) (err error) {
 	return
 }
 
-func VerifyTransactions(account model.Account) (err error) {
+func VerifyTransactions(fakeAcc fakeAccount) (err error) {
 
-	request, _ := http.NewRequest("GET", "/accounts/"+account.BIC+"/"+account.IBAN+"/transactions", nil)
+	request, _ := http.NewRequest("GET", "/accounts/"+fakeAcc.account.BIC+"/"+fakeAcc.account.IBAN+"/transactions", nil)
 
 	r.ServeHTTP(writer, request)
 
@@ -252,24 +252,22 @@ func VerifyTransactions(account model.Account) (err error) {
 		readTransactions = append(readTransactions, trans)
 	}
 
-	for _, v := range testData {
-		for _, createdTransaction := range v.transactions {
+	for _, createdTransaction := range fakeAcc.transactions {
 
-			found := false
+		found := false
 
-			for _, readTransaction := range readTransactions {
+		for _, readTransaction := range readTransactions {
 
-				if createdTransaction == readTransaction {
-					found = true
-				}
+			if createdTransaction == readTransaction {
+				found = true
 			}
+		}
 
-			if found == false {
-				err = fmt.Errorf("VerifyTransactions: Transaction: bic: %v iban: %v not found",
-					createdTransaction.BIC,
-					createdTransaction.IBAN)
-				return
-			}
+		if found == false {
+			err = fmt.Errorf("VerifyTransactions: Transaction: bic: %v iban: %v not found",
+				createdTransaction.BIC,
+				createdTransaction.IBAN)
+			return
 		}
 	}
 
