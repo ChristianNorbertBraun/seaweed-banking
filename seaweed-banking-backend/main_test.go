@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"strings"
 	"testing"
 	"time"
 
@@ -64,7 +63,7 @@ func initTestData() {
 		var newFakeAccount fakeAccount
 
 		newFakeAccount.account.BIC = RandBIC()
-		newFakeAccount.account.IBAN = RandIBAN()
+		newFakeAccount.account.IBAN = RandIBAN("DE")
 		newFakeAccount.account.Balance = RandNumberWithRange(200, 10000)
 
 		testData = append(testData, newFakeAccount)
@@ -154,7 +153,7 @@ func TestTransactionsCreate(t *testing.T) {
 /*
 *	HELPERS
  */
-func CreateAccount(account model.Account) (err error) {
+func CreateAccount(account model.Account) error {
 
 	b := new(bytes.Buffer)
 	json.NewEncoder(b).Encode(&account)
@@ -163,17 +162,14 @@ func CreateAccount(account model.Account) (err error) {
 	r.ServeHTTP(writer, request)
 
 	if writer.Code != 200 && writer.Code != 201 {
-		err = fmt.Errorf("CreateAccount: %v \nResponse Code: %v",
+		return fmt.Errorf("CreateAccount: %v \nResponse Code: %v",
 			request.URL.String(),
 			writer.Code)
-		return
 	}
-
-	err = nil
-	return
+	return nil
 }
 
-func CreateTransaction(account model.Account, transaction model.Transaction) (err error) {
+func CreateTransaction(account model.Account, transaction model.Transaction) error {
 
 	b := new(bytes.Buffer)
 	json.NewEncoder(b).Encode(&transaction)
@@ -182,75 +178,55 @@ func CreateTransaction(account model.Account, transaction model.Transaction) (er
 	r.ServeHTTP(writer, request)
 
 	if writer.Code != 200 && writer.Code != 201 {
-		err = fmt.Errorf("CreateTransaction: %v \nResponse Code: %v",
+		return fmt.Errorf("CreateTransaction: %v \nResponse Code: %v",
 			request.URL.String(),
 			writer.Code)
-		return
 	}
-
-	err = nil
-	return
+	return nil
 }
 
-func GetAllAccounts() (readData []byte, err error) {
+func GetAllAccounts() ([]byte, error) {
 
 	request, _ := http.NewRequest("GET", "/accounts", nil)
 
 	r.ServeHTTP(writer, request)
 
 	if writer.Code != 200 && writer.Code != 201 {
-		err = fmt.Errorf("GetAllAccounts: %v \nResponse Code: %v",
+		return nil, fmt.Errorf("GetAllAccounts: %v \nResponse Code: %v",
 			request.URL.String(),
 			writer.Code)
-		readData = nil
-		return
 	}
-
-	readData = writer.Body.Bytes()
-	err = nil
-	return
+	return writer.Body.Bytes(), nil
 }
 
-func VerifyAccount(account model.Account) (err error) {
+func VerifyAccount(account model.Account) error {
 
 	request, _ := http.NewRequest("GET", "/accounts/"+account.BIC+"/"+account.IBAN, nil)
 	r.ServeHTTP(writer, request)
 
 	if writer.Code != 200 && writer.Code != 201 {
-		err = fmt.Errorf("VerifyAccount: %v \nResponse Code: %v",
+		return fmt.Errorf("VerifyAccount: %v \nResponse Code: %v",
 			request.URL.String(),
 			writer.Code)
-		return
-	}
 
-	err = nil
-	return
+	}
+	return nil
 }
 
-func VerifyTransactions(fakeAcc fakeAccount) (err error) {
+func VerifyTransactions(fakeAcc fakeAccount) error {
 
 	request, _ := http.NewRequest("GET", "/accounts/"+fakeAcc.account.BIC+"/"+fakeAcc.account.IBAN+"/transactions", nil)
 
 	r.ServeHTTP(writer, request)
 
 	if writer.Code != 200 && writer.Code != 201 {
-		err = fmt.Errorf("VerifyTransactions: %v \n Response Code: %v",
+		return fmt.Errorf("VerifyTransactions: %v \n Response Code: %v",
 			request.URL.String(),
 			writer.Code)
-		return
 	}
 
-	response := strings.Split(writer.Body.String(), "}")
-
-	var readTransactions []model.Transaction
-
-	for _, v := range response {
-		strTransaction := v + "}"
-		var trans model.Transaction
-		json.Unmarshal([]byte(strTransaction), trans)
-
-		readTransactions = append(readTransactions, trans)
-	}
+	readTransactions := make([]model.Transaction, 0)
+	json.Unmarshal(writer.Body.Bytes(), &readTransactions)
 
 	for _, createdTransaction := range fakeAcc.transactions {
 
@@ -264,15 +240,12 @@ func VerifyTransactions(fakeAcc fakeAccount) (err error) {
 		}
 
 		if found == false {
-			err = fmt.Errorf("VerifyTransactions: Transaction: bic: %v iban: %v not found",
+			return fmt.Errorf("VerifyTransactions: Transaction: bic: %v iban: %v not found",
 				createdTransaction.BIC,
 				createdTransaction.IBAN)
-			return
 		}
 	}
-
-	err = nil
-	return
+	return nil
 }
 
 func WaitForUpdater() {
@@ -293,8 +266,8 @@ func RandBIC() string {
 	return string(b)
 }
 
-func RandIBAN() string {
-	iban := "DE"
+func RandIBAN(country string) string {
+	iban := country
 	iban += fmt.Sprintf("%v%v", RandNumberWithRange(100000000, 999999999), RandNumberWithRange(100000000, 999999999))
 	return iban
 }
