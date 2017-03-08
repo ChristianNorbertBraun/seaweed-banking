@@ -239,7 +239,11 @@ func VerifyTransactions(fakeAcc fakeAccount) error {
 
 	for _, createdTransaction := range fakeAcc.transactions {
 		for _, readTransaction := range readAccountInfo.Transactions {
-			if createdTransaction != *readTransaction {
+			if createdTransaction.BIC != readTransaction.BIC ||
+				createdTransaction.IBAN != readTransaction.IBAN ||
+				createdTransaction.ValueInSmallestUnit != readTransaction.ValueInSmallestUnit ||
+				createdTransaction.Currency != readTransaction.Currency ||
+				createdTransaction.IntendedUse != readTransaction.IntendedUse {
 
 				return fmt.Errorf("VerifyTransactions: Transaction: bic: %v iban: %v not found",
 					createdTransaction.BIC,
