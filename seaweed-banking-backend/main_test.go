@@ -29,6 +29,7 @@ var testData []fakeAccount
 var testConfigPath = flag.String("testConfig", "./data/conf/testconfig.json", "Path to json formated testconfig")
 
 func TestMain(m *testing.M) {
+
 	setUp()
 	initTestData()
 	test := m.Run()
@@ -36,6 +37,7 @@ func TestMain(m *testing.M) {
 }
 
 func setUp() {
+
 	flag.Parse()
 
 	err := config.ParseTestConfig(*testConfigPath)
@@ -94,6 +96,7 @@ func TestAccountsCreate(t *testing.T) {
 }
 
 func TestTransactionsCreate(t *testing.T) {
+
 	if len(testData) > 1 {
 
 		for i := range testData {
@@ -151,6 +154,7 @@ func TestTransactionsCreate(t *testing.T) {
 *	HELPERS
  */
 func CreateAccount(account model.Account) error {
+
 	writer := httptest.NewRecorder()
 	b := new(bytes.Buffer)
 	json.NewEncoder(b).Encode(&account)
@@ -167,6 +171,7 @@ func CreateAccount(account model.Account) error {
 }
 
 func CreateTransaction(account model.Account, transaction model.Transaction) error {
+
 	writer := httptest.NewRecorder()
 	b := new(bytes.Buffer)
 	json.NewEncoder(b).Encode(&transaction)
@@ -183,6 +188,7 @@ func CreateTransaction(account model.Account, transaction model.Transaction) err
 }
 
 func GetAllAccounts() ([]byte, error) {
+
 	writer := httptest.NewRecorder()
 	request, _ := http.NewRequest("GET", "/accounts", nil)
 
@@ -197,6 +203,7 @@ func GetAllAccounts() ([]byte, error) {
 }
 
 func VerifyAccount(account model.Account) error {
+
 	writer := httptest.NewRecorder()
 	request, _ := http.NewRequest("GET", "/accounts/"+account.BIC+"/"+account.IBAN, nil)
 	r.ServeHTTP(writer, request)
@@ -211,6 +218,7 @@ func VerifyAccount(account model.Account) error {
 }
 
 func VerifyTransactions(fakeAcc fakeAccount) error {
+
 	writer := httptest.NewRecorder()
 	request, _ := http.NewRequest("GET", "/accounts/"+fakeAcc.account.BIC+"/"+fakeAcc.account.IBAN+"/transactions", nil)
 
@@ -244,11 +252,13 @@ func VerifyTransactions(fakeAcc fakeAccount) error {
 }
 
 func WaitForUpdater() {
+
 	time.Sleep(time.Second * time.Duration(config.TestConfiguration.UpdaterInterval))
 }
 
 // generate Random String from accountRunes slice
 func RandBIC() string {
+
 	bicRunes := []rune(config.TestConfiguration.BicRunes)
 
 	b := make([]rune, 11)
@@ -261,12 +271,14 @@ func RandBIC() string {
 }
 
 func RandIBAN(country string) string {
+
 	iban := country
 	iban += fmt.Sprintf("%v%v", RandNumberWithRange(100000000, 999999999), RandNumberWithRange(100000000, 999999999))
 	return iban
 }
 
 func RandNumberWithRange(low, hi int) int32 {
+
 	num := low + rand.Intn(hi-low)
 	return int32(num)
 }
