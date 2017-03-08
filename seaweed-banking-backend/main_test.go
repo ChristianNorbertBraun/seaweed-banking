@@ -16,7 +16,7 @@ import (
 	"github.com/ChristianNorbertBraun/seaweed-banking/seaweed-banking-backend/config"
 	"github.com/ChristianNorbertBraun/seaweed-banking/seaweed-banking-backend/handler"
 	"github.com/ChristianNorbertBraun/seaweed-banking/seaweed-banking-backend/model"
-	"github.com/gorilla/mux"
+	"github.com/pressly/chi"
 )
 
 type fakeAccount struct {
@@ -24,9 +24,8 @@ type fakeAccount struct {
 	transactions []model.Transaction
 }
 
+var r *chi.Mux
 var testData []fakeAccount
-var r *mux.Router
-var writer *httptest.ResponseRecorder
 var testConfigPath = flag.String("testConfig", "./data/conf/testconfig.json", "Path to json formated testconfig")
 
 func TestMain(m *testing.M) {
@@ -47,13 +46,12 @@ func setUp() {
 			err)
 	}
 
-	r = mux.NewRouter()
-	r.HandleFunc("/accounts", handler.GetAllAccounts).Methods("GET")
-	r.HandleFunc("/accounts", handler.CreateAccount).Methods("POST")
-	r.HandleFunc("/accounts/{bic}/{iban}/transactions", handler.GetTransaction).Methods("GET")
-	r.HandleFunc("/accounts/{bic}/{iban}/transactions", handler.CreateTransaction).Methods("POST")
-	writer = httptest.NewRecorder()
-
+	r = chi.NewRouter()
+	r.Get("/accounts", handler.GetAllAccounts)
+	r.Post("/accounts", handler.CreateAccount)
+	r.Get("/accounts/:bic/:iban", handler.GetAccount)
+	r.Get("/accounts/:bic/:iban/transactions", handler.GetAccountInfo)
+	r.Post("/accounts/:bic/:iban/transactions", handler.CreateTransaction)
 }
 
 func initTestData() {
@@ -96,7 +94,6 @@ func TestAccountsCreate(t *testing.T) {
 }
 
 func TestTransactionsCreate(t *testing.T) {
-
 	if len(testData) > 1 {
 
 		for i := range testData {
@@ -154,7 +151,7 @@ func TestTransactionsCreate(t *testing.T) {
 *	HELPERS
  */
 func CreateAccount(account model.Account) error {
-
+	writer := httptest.NewRecorder()
 	b := new(bytes.Buffer)
 	json.NewEncoder(b).Encode(&account)
 
@@ -170,7 +167,7 @@ func CreateAccount(account model.Account) error {
 }
 
 func CreateTransaction(account model.Account, transaction model.Transaction) error {
-
+	writer := httptest.NewRecorder()
 	b := new(bytes.Buffer)
 	json.NewEncoder(b).Encode(&transaction)
 
@@ -186,7 +183,7 @@ func CreateTransaction(account model.Account, transaction model.Transaction) err
 }
 
 func GetAllAccounts() ([]byte, error) {
-
+	writer := httptest.NewRecorder()
 	request, _ := http.NewRequest("GET", "/accounts", nil)
 
 	r.ServeHTTP(writer, request)
@@ -200,7 +197,7 @@ func GetAllAccounts() ([]byte, error) {
 }
 
 func VerifyAccount(account model.Account) error {
-
+	writer := httptest.NewRecorder()
 	request, _ := http.NewRequest("GET", "/accounts/"+account.BIC+"/"+account.IBAN, nil)
 	r.ServeHTTP(writer, request)
 
@@ -214,7 +211,7 @@ func VerifyAccount(account model.Account) error {
 }
 
 func VerifyTransactions(fakeAcc fakeAccount) error {
-
+	writer := httptest.NewRecorder()
 	request, _ := http.NewRequest("GET", "/accounts/"+fakeAcc.account.BIC+"/"+fakeAcc.account.IBAN+"/transactions", nil)
 
 	r.ServeHTTP(writer, request)
@@ -225,25 +222,23 @@ func VerifyTransactions(fakeAcc fakeAccount) error {
 			writer.Code)
 	}
 
-	readTransactions := make([]model.Transaction, 0)
-	json.Unmarshal(writer.Body.Bytes(), &readTransactions)
+	readAccountInfo := model.AccountInfo{}
+	if err := json.Unmarshal(writer.Body.Bytes(), &readAccountInfo); err != nil {
+		return fmt.Errorf("VerifyTransactions: Unable to parse AccountInfo: bic %s iban %s",
+			fakeAcc.account.BIC,
+			fakeAcc.account.IBAN)
+	}
 
 	for _, createdTransaction := range fakeAcc.transactions {
+		for _, readTransaction := range readAccountInfo.Transactions {
+			if createdTransaction == *readTransaction {
 
-		found := false
-
-		for _, readTransaction := range readTransactions {
-
-			if createdTransaction == readTransaction {
-				found = true
+				return fmt.Errorf("VerifyTransactions: Transaction: bic: %v iban: %v not found",
+					createdTransaction.BIC,
+					createdTransaction.IBAN)
 			}
 		}
 
-		if found == false {
-			return fmt.Errorf("VerifyTransactions: Transaction: bic: %v iban: %v not found",
-				createdTransaction.BIC,
-				createdTransaction.IBAN)
-		}
 	}
 	return nil
 }
@@ -254,7 +249,6 @@ func WaitForUpdater() {
 
 // generate Random String from accountRunes slice
 func RandBIC() string {
-
 	bicRunes := []rune(config.TestConfiguration.BicRunes)
 
 	b := make([]rune, 11)
