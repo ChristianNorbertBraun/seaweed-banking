@@ -54,5 +54,5 @@ curl --data '{"bic": "1234","iban": "iban1234","balance": 123}' localhost:3333/a
  curl --data '{"iban": "iban1234","bic": "1234","currency": "EUR","valueInSmallestUnit": 100,"intendedUse": "MoneyMoney"}' localhost:3333/accounts/1234/iban1234/transactions
 
 // read accountinfo
-curl localhost:3333/accounts/1234/iban1234?from=2017-02-16_13:05:00
+curl localhost:3333/accounts/1234/iban1234/transactions?from=2017-02-16_13:05:00
 ```
