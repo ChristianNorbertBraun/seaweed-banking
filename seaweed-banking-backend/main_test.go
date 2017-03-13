@@ -136,20 +136,6 @@ func TestTransactionsCreate(t *testing.T) {
 	}
 }
 
-//func TestCreateTransactionsParallel(t *testing.T) {
-//TODO
-//}
-//
-// func TestReadAllAccountsParallel(t *testing.T) {
-// 	//TODO
-// 	// Readout all Accounts parallel
-// }
-//
-// func TestReadAllTransactions(t *testing.T) {
-// 	// TODO
-// 	// Readout All Transactions for every account parallel with benchmark
-// }
-
 /*
 *	HELPERS
  */
@@ -212,8 +198,23 @@ func VerifyAccount(account model.Account) error {
 		return fmt.Errorf("VerifyAccount: %v \nResponse Code: %v",
 			request.URL.String(),
 			writer.Code)
-
 	}
+
+	readAccount := model.Account{}
+	if err := json.Unmarshal(writer.Body.Bytes(), &readAccount); err != nil {
+		return fmt.Errorf("VerifyTransactions: Unable to parse AccountInfo: bic %s iban %s",
+			account.BIC,
+			account.IBAN)
+	}
+
+	if account.BIC != readAccount.BIC ||
+		account.IBAN != readAccount.IBAN ||
+		account.Balance != readAccount.Balance {
+		return fmt.Errorf("VerifyAccount: Account: bic: %v iban: %v not found",
+			account.BIC,
+			account.IBAN)
+	}
+
 	return nil
 }
 
