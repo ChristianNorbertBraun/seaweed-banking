@@ -148,7 +148,7 @@ func CreateAccount(account model.Account) error {
 	request, _ := http.NewRequest("POST", "/accounts", b)
 	r.ServeHTTP(writer, request)
 
-	if writer.Code != 200 && writer.Code != 201 {
+	if writer.Code != http.StatusCreated {
 		return fmt.Errorf("CreateAccount: %v \nResponse Code: %v",
 			request.URL.String(),
 			writer.Code)
@@ -165,7 +165,7 @@ func CreateTransaction(account model.Account, transaction model.Transaction) err
 	request, _ := http.NewRequest("POST", "/accounts/"+account.BIC+"/"+account.IBAN+"/transactions", b)
 	r.ServeHTTP(writer, request)
 
-	if writer.Code != 200 && writer.Code != 201 {
+	if writer.Code != http.StatusCreated {
 		return fmt.Errorf("CreateTransaction: %v \nResponse Code: %v",
 			request.URL.String(),
 			writer.Code)
@@ -180,7 +180,7 @@ func GetAllAccounts() ([]byte, error) {
 
 	r.ServeHTTP(writer, request)
 
-	if writer.Code != 200 && writer.Code != 201 {
+	if writer.Code != http.StatusOK {
 		return nil, fmt.Errorf("GetAllAccounts: %v \nResponse Code: %v",
 			request.URL.String(),
 			writer.Code)
@@ -194,7 +194,7 @@ func VerifyAccount(account model.Account) error {
 	request, _ := http.NewRequest("GET", "/accounts/"+account.BIC+"/"+account.IBAN, nil)
 	r.ServeHTTP(writer, request)
 
-	if writer.Code != 200 && writer.Code != 201 {
+	if writer.Code != http.StatusOK {
 		return fmt.Errorf("VerifyAccount: %v \nResponse Code: %v",
 			request.URL.String(),
 			writer.Code)
@@ -225,7 +225,7 @@ func VerifyTransactions(fakeAcc fakeAccount) error {
 
 	r.ServeHTTP(writer, request)
 
-	if writer.Code != 200 && writer.Code != 201 {
+	if writer.Code != http.StatusOK {
 		return fmt.Errorf("VerifyTransactions: %v \n Response Code: %v",
 			request.URL.String(),
 			writer.Code)
