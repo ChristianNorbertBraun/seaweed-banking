@@ -71,7 +71,7 @@ func distributeUpdates(updates []*model.Update) {
 		start = start + numberOfUpdatesPerWorker
 	}
 
-	handler.DoUpdate(updates[start:])
+	handler.UpdateAccountInfo(updates[start:])
 }
 
 func sendUpdates(url string, updates []*model.Update) error {
