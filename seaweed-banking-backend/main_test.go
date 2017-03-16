@@ -24,6 +24,8 @@ type fakeAccount struct {
 	transactions []model.Transaction
 }
 
+var testAccount = model.NoBalanceAccount{Name: "TestUser", BIC: "TESTBIC", IBAN: "TESTIBAN"}
+
 var r *chi.Mux
 var testConfigPath = flag.String("testConfig", "./data/conf/testconfig.json", "Path to json formated testconfig")
 
@@ -258,15 +260,15 @@ func VerifyTransactions(fakeAcc fakeAccount) error {
 
 	for _, createdTransaction := range fakeAcc.transactions {
 		for _, readTransaction := range readAccountInfo.Transactions {
-			if createdTransaction.BIC != readTransaction.BIC ||
-				createdTransaction.IBAN != readTransaction.IBAN ||
+			if createdTransaction.Recipient.BIC != readTransaction.Recipient.BIC ||
+				createdTransaction.Recipient.IBAN != readTransaction.Recipient.IBAN ||
 				createdTransaction.ValueInSmallestUnit != readTransaction.ValueInSmallestUnit ||
 				createdTransaction.Currency != readTransaction.Currency ||
 				createdTransaction.IntendedUse != readTransaction.IntendedUse {
 
 				return fmt.Errorf("VerifyTransactions: Transaction: bic: %v iban: %v not found",
-					createdTransaction.BIC,
-					createdTransaction.IBAN)
+					createdTransaction.Recipient.BIC,
+					createdTransaction.Recipient.IBAN)
 			}
 		}
 
@@ -283,6 +285,7 @@ func CreateRandomAccount() model.Account {
 
 	var newAccount model.Account
 
+	newAccount.Name = fmt.Sprintln("RandomAccount", RandNumberWithRange(0, 10))
 	newAccount.BIC = RandBIC()
 	newAccount.IBAN = RandIBAN("DE")
 	newAccount.Balance = RandNumberWithRange(200, 10000)
@@ -293,8 +296,10 @@ func CreateRandomAccount() model.Account {
 func CreateRandomTransaction(targetAcc model.Account, intendedUse string, value int32) model.Transaction {
 
 	var newTransaction model.Transaction
-	newTransaction.BIC = targetAcc.BIC
-	newTransaction.IBAN = targetAcc.IBAN
+	newTransaction.Recipient = *model.NewNoBalanceAccount(targetAcc)
+	newTransaction.Sender = testAccount
+	newTransaction.Recipient.BIC = targetAcc.BIC
+	newTransaction.Recipient.IBAN = targetAcc.IBAN
 	newTransaction.BookingDate = time.Now()
 	newTransaction.Currency = model.EUR
 	newTransaction.IntendedUse = intendedUse

@@ -34,8 +34,6 @@ func CreateUpdate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Println("TransactionDate: ", transaction)
-
 	update := model.NewUpdate(transaction)
 	if err := database.InsertUpdate(update); err != nil {
 		render.Status(r, http.StatusBadRequest)

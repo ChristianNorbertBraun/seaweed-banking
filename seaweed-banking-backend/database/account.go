@@ -22,9 +22,9 @@ func ReadAccount(bic string, iban string) (*model.Account, error) {
 	account := model.Account{}
 
 	if err := Connection.
-		QueryRow("SELECT bic, iban, balance FROM accountbalance WHERE bic = $1 AND iban = $2",
+		QueryRow("SELECT name, bic, iban, balance FROM accountbalance WHERE bic = $1 AND iban = $2",
 			bic,
-			iban).Scan(&account.BIC, &account.IBAN, &account.Balance); err != nil {
+			iban).Scan(&account.Name, &account.BIC, &account.IBAN, &account.Balance); err != nil {
 		log.Printf("Unable to read accounts with bic %s and iban %s: %s", bic, iban, err)
 		return nil, err
 	}
@@ -34,7 +34,7 @@ func ReadAccount(bic string, iban string) (*model.Account, error) {
 
 // ReadAccounts returns all accounts created so far with their balance
 func ReadAccounts() ([]*model.Account, error) {
-	rows, err := Connection.Query("SELECT bic, iban, balance FROM accountbalance")
+	rows, err := Connection.Query("SELECT name, bic, iban, balance FROM accountbalance")
 
 	if err != nil {
 		log.Printf("Unable to read all accounts: %s", err)
@@ -45,7 +45,7 @@ func ReadAccounts() ([]*model.Account, error) {
 
 	for rows.Next() {
 		current := model.Account{}
-		err := rows.Scan(&current.BIC, &current.IBAN, &current.Balance)
+		err := rows.Scan(&current.Name, &current.BIC, &current.IBAN, &current.Balance)
 		if err != nil {
 			return nil, err
 		}
@@ -69,8 +69,8 @@ func UpdateAccountBalance(transaction model.Transaction, afterUpdate postTransac
 	defer rollback(err, tx)
 
 	row := tx.QueryRow("SELECT bic, iban, balance FROM accountbalance WHERE bic = $1 AND IBAN = $2",
-		transaction.BIC,
-		transaction.IBAN)
+		transaction.Recipient.BIC,
+		transaction.Recipient.IBAN)
 	if err = row.Scan(&account.BIC, &account.IBAN, &account.Balance); err != nil {
 		return err
 	}
@@ -78,8 +78,8 @@ func UpdateAccountBalance(transaction model.Transaction, afterUpdate postTransac
 	if (account.Balance + transaction.ValueInSmallestUnit) < 0 {
 		err = fmt.Errorf("Tried to withdraw %d from account bic: %s iban: %s with balance: %d",
 			transaction.ValueInSmallestUnit,
-			transaction.BIC,
-			transaction.IBAN,
+			transaction.Recipient.BIC,
+			transaction.Recipient.IBAN,
 			account.Balance)
 
 		return err
@@ -87,8 +87,8 @@ func UpdateAccountBalance(transaction model.Transaction, afterUpdate postTransac
 
 	if _, err = tx.Exec("UPDATE accountbalance SET balance = $1 where bic = $2 AND iban = $3",
 		(account.Balance + transaction.ValueInSmallestUnit),
-		transaction.BIC,
-		transaction.IBAN); err != nil {
+		transaction.Recipient.BIC,
+		transaction.Recipient.IBAN); err != nil {
 		return err
 	}
 
@@ -105,7 +105,8 @@ func CreateAccount(account model.Account) error {
 	}
 	defer rollback(err, tx)
 
-	if _, err := Connection.Exec("INSERT INTO accountbalance(bic, iban, balance) VALUES ($1, $2, $3)",
+	if _, err := Connection.Exec("INSERT INTO accountbalance(name,bic, iban, balance) VALUES ($1, $2, $3, $4)",
+		account.Name,
 		account.BIC,
 		account.IBAN,
 		account.Balance); err != nil {

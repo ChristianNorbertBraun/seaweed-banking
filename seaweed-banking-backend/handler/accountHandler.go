@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"log"
 	"net/http"
 
 	"time"
@@ -82,12 +83,21 @@ func CreateAccount(w http.ResponseWriter, r *http.Request) {
 	if err := render.Bind(r.Body, &account); err != nil {
 		render.Status(r, http.StatusBadRequest)
 		render.JSON(w, r, http.StatusText(http.StatusBadRequest))
+
 		return
 	}
 
+	log.Println(account)
+	if !account.IsVaild() {
+		render.Status(r, http.StatusBadRequest)
+		render.JSON(w, r, http.StatusText(http.StatusBadRequest))
+
+		return
+	}
 	if err := database.CreateAccount(account); err != nil {
 		render.Status(r, http.StatusConflict)
 		render.JSON(w, r, http.StatusText(http.StatusConflict))
+
 		return
 	}
 	render.Status(r, http.StatusCreated)

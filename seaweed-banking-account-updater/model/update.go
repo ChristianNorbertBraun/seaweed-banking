@@ -15,8 +15,8 @@ type Update struct {
 func NewUpdate(transaction Transaction) *Update {
 
 	return &Update{
-		ID:              transaction.BIC + transaction.IBAN,
-		BIC:             transaction.BIC,
-		IBAN:            transaction.IBAN,
+		ID:              transaction.Recipient.BIC + transaction.Recipient.IBAN,
+		BIC:             transaction.Recipient.BIC,
+		IBAN:            transaction.Recipient.IBAN,
 		LastTransaction: transaction.BookingDate}
 }

@@ -55,7 +55,8 @@ func GetAccountInfoFromTo(bic string, iban string, from time.Time, to time.Time)
 		}
 
 		transactionsAfterFromAndBeforeTo := accountInfo.GetTransactionsAfterAndBefore(from, to)
-		return model.NewAccountInfo(bic,
+		return model.NewAccountInfo(accountInfo.Name,
+			bic,
 			iban,
 			accountInfo.Balance,
 			transactionsAfterFromAndBeforeTo), nil
@@ -105,7 +106,7 @@ func GetAccountInfoFrom(bic string, iban string, from time.Time) (*model.Account
 		}
 
 		transactionAfterFrom := accountInfo.GetTransactionsAfter(from)
-		return model.NewAccountInfo(bic, iban, accountInfo.Balance, transactionAfterFrom), nil
+		return model.NewAccountInfo(accountInfo.Name, bic, iban, accountInfo.Balance, transactionAfterFrom), nil
 	}
 
 	accountInfos, err := getAllAccountInfoFromDirectory(directory)
@@ -193,7 +194,8 @@ func createAccountInfoFromListOfAccountInfos(accountInfos []*model.AccountInfo, 
 		}
 	}
 
-	return model.NewAccountInfo(lastAccountInfo.BIC,
+	return model.NewAccountInfo(lastAccountInfo.Name,
+		lastAccountInfo.BIC,
 		lastAccountInfo.IBAN,
 		lastAccountInfo.Balance,
 		transactions)
