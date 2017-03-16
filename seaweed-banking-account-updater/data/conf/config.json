@@ -7,6 +7,10 @@
         "host": "localhost",
         "port": "8181"
     },
+    "master": {
+        "host": "http://localhost",
+        "port": "8181"
+    },
     "seaweed": {
         "filerUrl": "http://docker:8888",
         "accountFolder": "accounts",

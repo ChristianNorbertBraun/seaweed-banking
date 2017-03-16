@@ -57,7 +57,7 @@ func main() {
 
 			r.Route("/transactions", func(r chi.Router) {
 				r.Get("/", handler.GetAccountInfo)
-				r.Post("/", handler.CreateTransaction)
+				r.Post("/", handler.CreateTransactionAndUpdateBalance)
 			})
 		})
 	})

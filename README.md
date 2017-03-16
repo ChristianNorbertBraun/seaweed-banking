@@ -30,13 +30,18 @@ go run *.go
 go run *.go --config config/path/config.json
 ```
 
-3. Start seaweed-banking-account-updater. Therefor you have to go into the seaweed-banking-account-updater folder.
+3. Start seaweed-banking-account-updater. Therefore you have to go into the seaweed-banking-account-updater folder.
 ```
-// default config
-go run *.go
+// default config start master
+go run *.go --master
 // custom config
-go run *.go --config config/path/config.json
+go run *.go --config config/path/config.json --master
+
+// to start slave
+go run *.go --incomingConnections --port 8182
 ```
+
+If there is no slave the master will handle all updates on its own
 
 4. Now you are good to go.
 

@@ -30,12 +30,19 @@ func GetAccountInfo(w http.ResponseWriter, r *http.Request) {
 	bic := chi.URLParam(r, "bic")
 	iban := chi.URLParam(r, "iban")
 
-	timeAsString := r.FormValue("from")
+	timeFromAsString := r.FormValue("from")
+	timeToAsString := r.FormValue("to")
 
 	from := time.Time{}
+	to := time.Time{}
+
 	var err error
-	if timeAsString != "" {
-		from, err = time.Parse("2006-01-02_15:04:05", timeAsString)
+	if timeFromAsString != "" {
+		from, err = time.Parse("2006-01-02_15:04:05", timeFromAsString)
+	}
+
+	if timeToAsString != "" {
+		to, err = time.Parse("2006-01-02_15:04:05", timeToAsString)
 	}
 
 	if err != nil {
@@ -44,7 +51,7 @@ func GetAccountInfo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	accountInfo, err := database.GetAccountInfoFrom(bic, iban, from)
+	accountInfo, err := getAccountInfoFromTo(bic, iban, from, to)
 
 	if err != nil {
 		render.Status(r, http.StatusBadRequest)
@@ -85,4 +92,12 @@ func CreateAccount(w http.ResponseWriter, r *http.Request) {
 	}
 	render.Status(r, http.StatusCreated)
 	render.JSON(w, r, account)
+}
+
+func getAccountInfoFromTo(bic string, iban string, from time.Time, to time.Time) (*model.AccountInfo, error) {
+	if to.IsZero() {
+		return database.GetAccountInfoFrom(bic, iban, from)
+	}
+
+	return database.GetAccountInfoFromTo(bic, iban, from, to)
 }

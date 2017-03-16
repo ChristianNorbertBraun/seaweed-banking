@@ -33,7 +33,6 @@ func GetTransaction(w http.ResponseWriter, r *http.Request) {
 }
 
 // CreateTransactionAndUpdateBalance creates the in the body of the request defined posting
-// TODO Currently only updating the account balance!
 func CreateTransactionAndUpdateBalance(w http.ResponseWriter, r *http.Request) {
 	transaction := model.Transaction{}
 	if err := render.Bind(r.Body, &transaction); err != nil {
@@ -42,12 +41,15 @@ func CreateTransactionAndUpdateBalance(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	transaction.BookingDate = time.Now().UTC()
+
 	if !transaction.IsValid() {
 		log.Println("Transaction is not valid: ", transaction)
 		render.Status(r, http.StatusBadRequest)
 		render.JSON(w, r, http.StatusText(http.StatusBadRequest))
 	} else {
-		if err := database.UpdateAccountBalance(transaction); err != nil {
+
+		if err := database.UpdateAccountBalance(transaction, createTransactionInDFS); err != nil {
 			render.Status(r, http.StatusBadRequest)
 			render.JSON(w, r, http.StatusText(http.StatusBadRequest))
 		}
@@ -57,34 +59,16 @@ func CreateTransactionAndUpdateBalance(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// CreateTransaction checks the transaction
-func CreateTransaction(w http.ResponseWriter, r *http.Request) {
-	transaction := model.Transaction{}
-
-	if err := render.Bind(r.Body, &transaction); err != nil {
-		render.Status(r, http.StatusBadRequest)
-		render.JSON(w, r, err.Error())
-
-		return
-	}
-
-	transaction.BookingDate = time.Now().UTC()
-
-	if err := database.CreateTransaction(transaction); err != nil {
-		render.Status(r, http.StatusBadRequest)
-		render.JSON(w, r, http.StatusText(http.StatusBadRequest))
-
-		return
-	}
+func createTransactionInDFS(transaction model.Transaction) error {
 
 	if err := sendTransactionToUpdater(transaction); err != nil {
-		render.Status(r, http.StatusBadRequest)
-		render.JSON(w, r, err.Error())
-
-		return
+		return err
 	}
-	render.Status(r, http.StatusCreated)
-	render.JSON(w, r, transaction)
+	if err := database.CreateTransaction(transaction); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func sendTransactionToUpdater(transaction model.Transaction) error {
