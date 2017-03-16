@@ -52,7 +52,7 @@ func setUp() {
 	r.Post("/accounts", handler.CreateAccount)
 	r.Get("/accounts/:bic/:iban", handler.GetAccount)
 	r.Get("/accounts/:bic/:iban/transactions", handler.GetAccountInfo)
-	r.Post("/accounts/:bic/:iban/transactions", handler.CreateTransaction)
+	r.Post("/accounts/:bic/:iban/transactions", handler.CreateTransactionAndUpdateBalance)
 }
 
 func initBenchmarkData() {
