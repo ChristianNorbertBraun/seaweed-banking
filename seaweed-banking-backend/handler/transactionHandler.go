@@ -33,7 +33,6 @@ func GetTransaction(w http.ResponseWriter, r *http.Request) {
 }
 
 // CreateTransactionAndUpdateBalance creates the in the body of the request defined posting
-// TODO Currently only updating the account balance!
 func CreateTransactionAndUpdateBalance(w http.ResponseWriter, r *http.Request) {
 	transaction := model.Transaction{}
 	if err := render.Bind(r.Body, &transaction); err != nil {

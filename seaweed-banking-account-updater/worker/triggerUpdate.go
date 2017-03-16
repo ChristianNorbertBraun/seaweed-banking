@@ -1,21 +1,29 @@
 package worker
 
 import (
+	"bytes"
 	"log"
 	"time"
 
+	"encoding/json"
+
+	"net/http"
+
+	"fmt"
+
 	"github.com/ChristianNorbertBraun/seaweed-banking/seaweed-banking-account-updater/database"
+	"github.com/ChristianNorbertBraun/seaweed-banking/seaweed-banking-account-updater/handler"
 	"github.com/ChristianNorbertBraun/seaweed-banking/seaweed-banking-account-updater/model"
 )
 
-var ticker *time.Ticker
+var UpdateTicker *time.Ticker
 
 // SetUpUpdateWorker starts a worker which checks the update table for new entries
 // and updates the matching accountInfos
 func SetUpUpdateWorker(duration time.Duration) {
-	ticker = time.NewTicker(duration)
+	UpdateTicker = time.NewTicker(duration)
 	go func() {
-		for t := range ticker.C {
+		for t := range UpdateTicker.C {
 			log.Println("-------------------------------------------------------------")
 			log.Println("Start Update at: ", t)
 
@@ -24,8 +32,8 @@ func SetUpUpdateWorker(duration time.Duration) {
 	}()
 }
 
-// StopUpdateWorker stops the update worker
-func StopUpdateWorker() {
+// StopTicker stops the given ticker
+func StopTicker(ticker *time.Ticker) {
 	if ticker != nil {
 		ticker.Stop()
 	}
@@ -39,58 +47,49 @@ func runUpdate() {
 		return
 	}
 
-	for _, update := range updates {
-		go runUpdateFor(update)
-	}
-
+	distributeUpdates(updates)
 }
 
-func runUpdateFor(update *model.Update) {
-	accountInfo, err := database.GetLatestAccountInfo(update.BIC, update.IBAN)
+func distributeUpdates(updates []*model.Update) {
+	numberOfSubscribers := len(subscribers)
+	log.Printf("Distributing updates on %d subscrribers", numberOfSubscribers)
+	// the master itself is also a worker therefore +1
+	numberOfUpdatesPerWorker := len(updates) / (numberOfSubscribers + 1)
 
-	log.Printf("Working on update for bic %s iban %s", update.BIC, update.IBAN)
+	if len(updates) < numberOfSubscribers+1 {
+		numberOfUpdatesPerWorker = 1
+	}
+
+	start := 0
+	for url := range subscribers {
+		if start >= len(updates) {
+			return
+		}
+		if err := sendUpdates(url, updates[start:start+numberOfUpdatesPerWorker]); err != nil {
+			Unregister(url)
+		}
+		start = start + numberOfUpdatesPerWorker
+	}
+
+	handler.DoUpdate(updates[start:])
+}
+
+func sendUpdates(url string, updates []*model.Update) error {
+	buffer := bytes.Buffer{}
+
+	if err := json.NewEncoder(&buffer).Encode(updates); err != nil {
+		return err
+	}
+
+	resp, err := http.Post(url+"/do/update", "application/json", &buffer)
 
 	if err != nil {
-		log.Println("Unable to get latest account info", err)
-
-		return
+		return err
 	}
 
-	latestTransactionTime, _ := time.Parse(time.RFC3339Nano, accountInfo.LatestTransaction)
-	log.Println("Accountinfo time: ", accountInfo.LatestTransaction)
-	log.Println("Update last transaction: ", update.LastTransaction.Format(time.RFC3339Nano))
-	if latestTransactionTime.
-		After(update.LastTransaction) {
-		log.Printf("AccountInfo already up to date")
-		err := database.DeleteUpdate(update.BIC, update.IBAN)
-
-		if err != nil {
-			log.Println("Unable to delete update entry ", err)
-		}
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("Unable to send update to %s", url)
 	}
 
-	log.Println("About to get all Transactions after")
-	transactionsToUpdate, err := database.GetAllTransactionsForAccountAfter(
-		update.BIC,
-		update.IBAN,
-		accountInfo.LatestTransaction)
-	log.Println("Got all Transactions: ", len(transactionsToUpdate))
-
-	if err != nil {
-		log.Println("Unable to fetch transactions after: ", accountInfo.LatestTransaction)
-		log.Println("Error was: ", err)
-		return
-	}
-
-	for _, transaction := range transactionsToUpdate {
-		added, newAccountInfo := accountInfo.AddTransaction(transaction)
-
-		if !added {
-			database.CreateAccountInfo(accountInfo)
-			accountInfo = newAccountInfo
-		}
-	}
-
-	database.CreateAccountInfo(accountInfo)
-	log.Println("Done with updating for ", update.BIC, update.IBAN)
+	return nil
 }

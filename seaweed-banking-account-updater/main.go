@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"time"
 
+	"io/ioutil"
+
 	"github.com/ChristianNorbertBraun/seaweed-banking/seaweed-banking-account-updater/config"
 	"github.com/ChristianNorbertBraun/seaweed-banking/seaweed-banking-account-updater/database"
 	"github.com/ChristianNorbertBraun/seaweed-banking/seaweed-banking-account-updater/handler"
@@ -19,6 +21,9 @@ import (
 
 var routes = flag.Bool("routes", false, "Generate router documentation")
 var configPath = flag.String("config", "./data/conf/config.json", "Path to json formated config")
+var master = flag.Bool("master", false, "Declare update service as master")
+var port = flag.String("port", "", "Declare port for updater")
+var incomingConnections = flag.Bool("incomingConnections", false, "Enable incoming connections")
 
 func init() {
 	flag.Parse()
@@ -30,9 +35,22 @@ func init() {
 			err)
 	}
 
+	if *port != "" {
+		config.Configuration.Server.Port = *port
+	}
+
+	if *incomingConnections {
+		config.Configuration.Server.Host = ""
+	}
+
 	database.Configure()
-	worker.SetUpUpdateWorker(10 * time.Second)
+	if *master {
+		worker.SetUpUpdateWorker(10 * time.Second)
+	} else {
+		worker.SetUpSlavePing(time.Minute)
+	}
 }
+
 func main() {
 	r := chi.NewRouter()
 
@@ -40,9 +58,20 @@ func main() {
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 
-	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		render.PlainText(w, r, "Hallo Welt")
+	r.Post("/register", func(w http.ResponseWriter, r *http.Request) {
+		address, err := ioutil.ReadAll(r.Body)
+
+		if err != nil {
+			render.Status(r, http.StatusBadRequest)
+			render.PlainText(w, r, "No adress given")
+			return
+		}
+
+		worker.Register(string(address))
 	})
+
+	r.Post("/do/update", handler.RunUpdates)
+
 	r.Route("/updates", func(r chi.Router) {
 		r.Get("/", handler.ReadAllUpdates)
 		r.Post("/", handler.CreateUpdate)

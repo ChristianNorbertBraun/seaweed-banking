@@ -16,6 +16,10 @@ type Config struct {
 		Host string `json:"host"`
 		Port string `json:"port"`
 	} `json:"server"`
+	Master struct {
+		Host string `json:"host"`
+		Port string `json:"port"`
+	} `json:"master"`
 	Seaweed struct {
 		FilerURL      string `json:"filerUrl"`
 		AccountFolder string `json:"accountFolder"`
