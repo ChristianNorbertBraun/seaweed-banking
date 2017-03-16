@@ -55,7 +55,7 @@ func distributeUpdates(updates []*model.Update) {
 	if numberOfSubscribers == 0 {
 		log.Println("No subscribers have to do all the work allone. Pff.")
 	} else {
-		log.Printf("Distributing updates on %d subscrribers", numberOfSubscribers)
+		log.Printf("Distributing updates on %d subscribers", numberOfSubscribers)
 	}
 	// the master itself is also a worker therefore +1
 	numberOfUpdatesPerWorker := len(updates) / (numberOfSubscribers + 1)
