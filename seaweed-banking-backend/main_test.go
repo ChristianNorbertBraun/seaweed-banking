@@ -285,7 +285,7 @@ func CreateRandomAccount() model.Account {
 
 	var newAccount model.Account
 
-	newAccount.Name = fmt.Sprintln("RandomAccount", RandNumberWithRange(0, 10))
+	newAccount.Name = fmt.Sprintf("RandomAccount%d", RandNumberWithRange(0, 10))
 	newAccount.BIC = RandBIC()
 	newAccount.IBAN = RandIBAN("DE")
 	newAccount.Balance = RandNumberWithRange(200, 10000)
