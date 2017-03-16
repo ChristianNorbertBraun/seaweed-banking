@@ -25,13 +25,12 @@ type fakeAccount struct {
 }
 
 var r *chi.Mux
-var testData []fakeAccount
 var testConfigPath = flag.String("testConfig", "./data/conf/testconfig.json", "Path to json formated testconfig")
 
 func TestMain(m *testing.M) {
 
 	setUp()
-	initTestData()
+	initBenchmarkData()
 	test := m.Run()
 	os.Exit(test)
 }
@@ -56,18 +55,8 @@ func setUp() {
 	r.Post("/accounts/:bic/:iban/transactions", handler.CreateTransaction)
 }
 
-func initTestData() {
+func initBenchmarkData() {
 
-	for i := 0; i < config.TestConfiguration.NoOfFakeAccounts; i++ {
-
-		var newFakeAccount fakeAccount
-
-		newFakeAccount.account.BIC = RandBIC()
-		newFakeAccount.account.IBAN = RandIBAN("DE")
-		newFakeAccount.account.Balance = RandNumberWithRange(200, 10000)
-
-		testData = append(testData, newFakeAccount)
-	}
 }
 
 /*
@@ -76,8 +65,14 @@ func initTestData() {
 
 func TestAccountsCreate(t *testing.T) {
 
-	for _, data := range testData {
-		err := CreateAccount(data.account)
+	var testAccounts []model.Account
+
+	for i := 0; i < config.TestConfiguration.NoOfFakeAccounts; i++ {
+		testAccounts = append(testAccounts, CreateRandomAccount())
+	}
+
+	for _, account := range testAccounts {
+		err := PostAccount(account)
 
 		if err != nil {
 			t.Error(err)
@@ -86,8 +81,8 @@ func TestAccountsCreate(t *testing.T) {
 
 	WaitForUpdater()
 
-	for _, data := range testData {
-		err := VerifyAccount(data.account)
+	for _, account := range testAccounts {
+		err := VerifyAccount(account)
 
 		if err != nil {
 			t.Error(err)
@@ -97,19 +92,27 @@ func TestAccountsCreate(t *testing.T) {
 
 func TestTransactionsCreate(t *testing.T) {
 
+	var testData []fakeAccount
+
+	for i := 0; i < config.TestConfiguration.NoOfFakeAccounts; i++ {
+		var newFakeAccount fakeAccount
+		newFakeAccount.account = CreateRandomAccount()
+		testData = append(testData, newFakeAccount)
+
+		err := PostAccount(newFakeAccount.account)
+
+		if err != nil {
+			t.Error(err)
+		}
+	}
+
 	if len(testData) > 1 {
 
 		for i := range testData {
 			if len(testData) > i+1 {
-				var newTransaction model.Transaction
-				newTransaction.BIC = testData[i+1].account.BIC
-				newTransaction.IBAN = testData[i+1].account.IBAN
-				newTransaction.BookingDate = time.Now()
-				newTransaction.Currency = model.EUR
-				newTransaction.IntendedUse = "testingTransactions"
-				newTransaction.ValueInSmallestUnit = RandNumberWithRange(0, int(testData[i].account.Balance))
+				newTransaction := CreateRandomTransaction(testData[i+1].account, "TestCreateTransaction", RandNumberWithRange(10, int(testData[i].account.Balance)))
 
-				err := CreateTransaction(testData[i].account, newTransaction)
+				err := PostTransaction(testData[i].account, newTransaction)
 
 				if err != nil {
 					t.Error(err)
@@ -139,7 +142,7 @@ func TestTransactionsCreate(t *testing.T) {
 /*
 *	HELPERS
  */
-func CreateAccount(account model.Account) error {
+func PostAccount(account model.Account) error {
 
 	writer := httptest.NewRecorder()
 	b := new(bytes.Buffer)
@@ -156,7 +159,7 @@ func CreateAccount(account model.Account) error {
 	return nil
 }
 
-func CreateTransaction(account model.Account, transaction model.Transaction) error {
+func PostTransaction(account model.Account, transaction model.Transaction) error {
 
 	writer := httptest.NewRecorder()
 	b := new(bytes.Buffer)
@@ -188,6 +191,21 @@ func GetAllAccounts() ([]byte, error) {
 	return writer.Body.Bytes(), nil
 }
 
+func GetAccount(account model.Account) ([]byte, error) {
+
+	writer := httptest.NewRecorder()
+	request, _ := http.NewRequest("GET", "/accounts/"+account.BIC+"/"+account.IBAN, nil)
+
+	r.ServeHTTP(writer, request)
+
+	if writer.Code != http.StatusOK {
+		return nil, fmt.Errorf("GetAllAccounts: %v \nResponse Code: %v",
+			request.URL.String(),
+			writer.Code)
+	}
+	return writer.Body.Bytes(), nil
+}
+
 func VerifyAccount(account model.Account) error {
 
 	writer := httptest.NewRecorder()
@@ -202,7 +220,7 @@ func VerifyAccount(account model.Account) error {
 
 	readAccount := model.Account{}
 	if err := json.Unmarshal(writer.Body.Bytes(), &readAccount); err != nil {
-		return fmt.Errorf("VerifyTransactions: Unable to parse AccountInfo: bic %s iban %s",
+		return fmt.Errorf("VerifyAccount: Unable to parse AccountInfo: bic %s iban %s",
 			account.BIC,
 			account.IBAN)
 	}
@@ -259,6 +277,30 @@ func VerifyTransactions(fakeAcc fakeAccount) error {
 func WaitForUpdater() {
 
 	time.Sleep(time.Second * time.Duration(config.TestConfiguration.UpdaterInterval))
+}
+
+func CreateRandomAccount() model.Account {
+
+	var newAccount model.Account
+
+	newAccount.BIC = RandBIC()
+	newAccount.IBAN = RandIBAN("DE")
+	newAccount.Balance = RandNumberWithRange(200, 10000)
+
+	return newAccount
+}
+
+func CreateRandomTransaction(targetAcc model.Account, intendedUse string, value int32) model.Transaction {
+
+	var newTransaction model.Transaction
+	newTransaction.BIC = targetAcc.BIC
+	newTransaction.IBAN = targetAcc.IBAN
+	newTransaction.BookingDate = time.Now()
+	newTransaction.Currency = model.EUR
+	newTransaction.IntendedUse = intendedUse
+	newTransaction.ValueInSmallestUnit = value
+
+	return newTransaction
 }
 
 // generate Random String from accountRunes slice
