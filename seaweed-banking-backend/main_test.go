@@ -30,7 +30,6 @@ var testConfigPath = flag.String("testConfig", "./data/conf/testconfig.json", "P
 func TestMain(m *testing.M) {
 
 	setUp()
-	initBenchmarkData()
 	test := m.Run()
 	os.Exit(test)
 }
@@ -52,11 +51,7 @@ func setUp() {
 	r.Post("/accounts", handler.CreateAccount)
 	r.Get("/accounts/:bic/:iban", handler.GetAccount)
 	r.Get("/accounts/:bic/:iban/transactions", handler.GetAccountInfo)
-	r.Post("/accounts/:bic/:iban/transactions", handler.CreateTransaction)
-}
-
-func initBenchmarkData() {
-
+	r.Post("/accounts/:bic/:iban/transactions", handler.CreateTransactionAndUpdateBalance)
 }
 
 /*
@@ -68,11 +63,10 @@ func TestAccountsCreate(t *testing.T) {
 	var testAccounts []model.Account
 
 	for i := 0; i < config.TestConfiguration.NoOfFakeAccounts; i++ {
-		testAccounts = append(testAccounts, CreateRandomAccount())
-	}
+		newAccount := CreateRandomAccount()
+		testAccounts = append(testAccounts, newAccount)
 
-	for _, account := range testAccounts {
-		err := PostAccount(account)
+		err := PostAccount(newAccount)
 
 		if err != nil {
 			t.Error(err)
@@ -137,6 +131,18 @@ func TestTransactionsCreate(t *testing.T) {
 			}
 		}
 	}
+}
+
+func BenchmarkCreateAccounts(b *testing.B) {
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			err := PostAccount(CreateRandomAccount())
+
+			if err != nil {
+				b.Error(err)
+			}
+		}
+	})
 }
 
 /*
