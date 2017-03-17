@@ -19,19 +19,6 @@ import (
 	"github.com/pressly/chi/render"
 )
 
-// GetTransaction returns a demo transaction for testing purposes
-func GetTransaction(w http.ResponseWriter, r *http.Request) {
-	transaction := model.Transaction{
-		BIC:                 "BIC",
-		IBAN:                "IBAN",
-		BookingDate:         time.Now(),
-		Currency:            "EUR",
-		ValueInSmallestUnit: 100,
-		IntendedUse:         "Nothing"}
-
-	render.JSON(w, r, transaction)
-}
-
 // CreateTransactionAndUpdateBalance creates the in the body of the request defined posting
 func CreateTransactionAndUpdateBalance(w http.ResponseWriter, r *http.Request) {
 	transaction := model.Transaction{}

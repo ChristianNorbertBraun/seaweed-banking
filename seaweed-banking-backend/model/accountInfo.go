@@ -5,8 +5,9 @@ import "time"
 // AccountInfo holds all information for an account from the oldest to
 // the latest transaction
 type AccountInfo struct {
-	IBAN              string         `json:"iban"`
+	Name              string         `json:"name"`
 	BIC               string         `json:"bic"`
+	IBAN              string         `json:"iban"`
 	Balance           int32          `json:"balance"`
 	Predeccessor      string         `json:"predeccessor,omitempty"`
 	OldestTransaction string         `json:"oldestTransaction,omitempty"`
@@ -53,6 +54,6 @@ func (ai *AccountInfo) GetTransactionsAfterAndBefore(after time.Time, before tim
 }
 
 // NewAccountInfo creates a new accountInf
-func NewAccountInfo(bic string, iban string, balance int32, transactions []*Transaction) *AccountInfo {
-	return &AccountInfo{BIC: bic, IBAN: iban, Balance: balance, Transactions: transactions}
+func NewAccountInfo(name string, bic string, iban string, balance int32, transactions []*Transaction) *AccountInfo {
+	return &AccountInfo{Name: name, BIC: bic, IBAN: iban, Balance: balance, Transactions: transactions}
 }

@@ -13,16 +13,16 @@ const (
 
 // Transaction represents a complete transaction from one account
 type Transaction struct {
-	IBAN                string    `json:"iban"`
-	BIC                 string    `json:"bic"`
-	BookingDate         time.Time `json:"bookingDate"`
-	Currency            Currency  `json:"currency"`
-	ValueInSmallestUnit int32     `json:"valueInSmallestUnit"`
-	IntendedUse         string    `json:"intendedUse"`
+	Recipient           NoBalanceAccount `json:"receipient"`
+	Sender              NoBalanceAccount `json:"sender"`
+	BookingDate         time.Time        `json:"bookingDate"`
+	Currency            Currency         `json:"currency"`
+	ValueInSmallestUnit int32            `json:"valueInSmallestUnit"`
+	IntendedUse         string           `json:"intendedUse"`
 }
 
 // IsValid checks if all fields of the transaction are set
 func (t *Transaction) IsValid() bool {
-	return t.IBAN != "" && t.BIC != "" && !t.BookingDate.IsZero() &&
+	return t.Recipient.IsVaild() && t.Sender.IsVaild() && !t.BookingDate.IsZero() &&
 		t.Currency != "" && t.ValueInSmallestUnit != 0 && t.IntendedUse != ""
 }

@@ -29,8 +29,8 @@ func CreateTransaction(transaction model.Transaction) error {
 		filename,
 		fmt.Sprintf("%s/%s/%s",
 			config.Configuration.Seaweed.BookFolder,
-			transaction.BIC,
-			transaction.IBAN))
+			transaction.Recipient.BIC,
+			transaction.Recipient.IBAN))
 
 	if err != nil {
 		return err
