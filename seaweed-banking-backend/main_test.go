@@ -296,7 +296,7 @@ func CreateRandomAccount() model.Account {
 func CreateRandomTransaction(targetAcc model.Account, intendedUse string, value int32) model.Transaction {
 
 	var newTransaction model.Transaction
-	newTransaction.Recipient = *model.NewNoBalanceAccount(targetAcc)
+	newTransaction.Recipient = targetAcc.NoBalanceAccount
 	newTransaction.Sender = testAccount
 	newTransaction.Recipient.BIC = targetAcc.BIC
 	newTransaction.Recipient.IBAN = targetAcc.IBAN

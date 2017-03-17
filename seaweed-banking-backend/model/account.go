@@ -1,5 +1,6 @@
 package model
 
+// NoBalanceAccount represents an account without balance
 type NoBalanceAccount struct {
 	Name string `json:"name"`
 	BIC  string `json:"bic"`
@@ -11,19 +12,8 @@ func (a *NoBalanceAccount) IsVaild() bool {
 	return a.Name != "" && a.BIC != "" && a.IBAN != ""
 }
 
-func NewNoBalanceAccount(account Account) *NoBalanceAccount {
-	return &NoBalanceAccount{Name: account.Name, IBAN: account.IBAN, BIC: account.BIC}
-}
-
-// Account represents a basic account with bic, iban and the balance
+// Account is a NoBalanceAccount with balance
 type Account struct {
-	Name    string `json:"name"`
-	BIC     string `json:"bic"`
-	IBAN    string `json:"iban"`
-	Balance int32  `json:"balance"`
-}
-
-// IsVaild checks the validity of the given account
-func (a *Account) IsVaild() bool {
-	return a.Name != "" && a.BIC != "" && a.IBAN != ""
+	NoBalanceAccount
+	Balance int32 `json:"balance"`
 }
