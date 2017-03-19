@@ -62,6 +62,10 @@ func setUp() {
 
 func TestAccountsCreate(t *testing.T) {
 
+	if testing.Short() {
+		t.Skip("Skip Integration Tests if Short flag is set")
+	}
+
 	var testAccounts []model.Account
 
 	for i := 0; i < config.TestConfiguration.NoOfFakeAccounts; i++ {
@@ -87,6 +91,10 @@ func TestAccountsCreate(t *testing.T) {
 }
 
 func TestTransactionsCreate(t *testing.T) {
+
+	if testing.Short() {
+		t.Skip("Skip Integration Tests if Short flag is set")
+	}
 
 	var testData []fakeAccount
 
@@ -133,18 +141,6 @@ func TestTransactionsCreate(t *testing.T) {
 			}
 		}
 	}
-}
-
-func BenchmarkCreateAccounts(b *testing.B) {
-	b.RunParallel(func(pb *testing.PB) {
-		for pb.Next() {
-			err := PostAccount(CreateRandomAccount())
-
-			if err != nil {
-				b.Error(err)
-			}
-		}
-	})
 }
 
 /*
@@ -291,9 +287,9 @@ func CreateRandomAccount() model.Account {
 
 	var newAccount model.Account
 
-	newAccount.Name = fmt.Sprintf("RandomAccount%d", RandNumberWithRange(0, 10))
+	newAccount.Name = fmt.Sprintf("RandomAccount%d", RandNumberWithRange(0, 1000))
 	newAccount.BIC = RandBIC()
-	newAccount.IBAN = RandIBAN("DE")
+	newAccount.IBAN = RandIBAN()
 	newAccount.Balance = RandNumberWithRange(200, 10000)
 
 	return newAccount
@@ -328,15 +324,15 @@ func RandBIC() string {
 	return string(b)
 }
 
-func RandIBAN(country string) string {
+func RandIBAN() string {
 
-	iban := country
+	iban := "DE"
 	iban += fmt.Sprintf("%v%v", RandNumberWithRange(100000000, 999999999), RandNumberWithRange(100000000, 999999999))
 	return iban
 }
 
 func RandNumberWithRange(low, hi int) int32 {
-
-	num := low + rand.Intn(hi-low)
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	num := low + r.Intn(hi-low)
 	return int32(num)
 }
