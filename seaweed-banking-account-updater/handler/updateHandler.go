@@ -112,10 +112,18 @@ func deleteUpdateWhenAlreadyUpToDate(accountInfo *model.AccountInfo, update *mod
 	log.Println("Update last transaction: ", update.LastTransaction.Format(time.RFC3339Nano))
 	if latestTransactionTime.
 		After(update.LastTransaction) {
-		log.Printf("AccountInfo already up to date")
+		log.Printf("AccountInfo already up to date for bic: %s iban: %s", accountInfo.BIC, accountInfo.IBAN)
 		if err := database.DeleteUpdate(update.BIC, update.IBAN); err != nil {
+			log.Printf("Unable to delete update for bic: %s iban: %s", accountInfo.BIC, accountInfo.IBAN)
 			return err
 		}
+
+		if err := database.DeleteTransactionsFromBook(update); err != nil {
+			log.Printf("Unable to delete book entries for bic: %s iban: %s", accountInfo.BIC, accountInfo.IBAN)
+			return err
+		}
+		log.Printf("Deleted update and book entries for bic: %s iban: %s", accountInfo.BIC, accountInfo.IBAN)
+
 	}
 	return nil
 }

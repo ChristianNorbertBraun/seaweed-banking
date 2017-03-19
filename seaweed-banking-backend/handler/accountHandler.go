@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"log"
 	"net/http"
 
 	"time"
@@ -87,7 +86,6 @@ func CreateAccount(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Println(account)
 	if !account.IsVaild() {
 		render.Status(r, http.StatusBadRequest)
 		render.JSON(w, r, http.StatusText(http.StatusBadRequest))
