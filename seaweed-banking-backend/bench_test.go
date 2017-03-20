@@ -1,51 +1,42 @@
 package main
 
-import (
-	"encoding/json"
-	"testing"
-
-	"github.com/ChristianNorbertBraun/seaweed-banking/seaweed-banking-backend/model"
-)
+import "testing"
 
 func benchmarkCreateAccounts(b *testing.B, n int) {
-	accounts := make([]model.Account, n)
 
-	for i := range accounts {
-		accounts[i] = CreateRandomAccount()
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		// newAcc := CreateRandomAccount()
+		// benchAccounts = append(benchAccounts, newAcc)
+		err := PostAccount(CreateRandomAccount())
+
+		if err != nil {
+			b.Error(err)
+		}
 	}
-
-	b.StartTimer()
-	for _, account := range accounts {
-		PostAccount(account)
-	}
-
 }
 
 func benchmarkCreateAccountParallel(b *testing.B) {
 
+	b.ResetTimer()
+
 	b.RunParallel(func(pb *testing.PB) {
-		for pb.Next() {
-			PostAccount(CreateRandomAccount())
+		newAcc := CreateRandomAccount()
+		benchAccounts = append(benchAccounts, newAcc)
+		err := PostAccount(newAcc)
+
+		if err != nil {
+			b.Error(err)
 		}
 	})
 }
 
 func benchmarkReadAccounts(b *testing.B) {
-	accounts, err := GetAllAccounts()
 
-	if err != nil {
-		b.Error(err)
-	}
+	b.ResetTimer()
 
-	readAccounts := make([]model.Account, 0)
-	err = json.Unmarshal(accounts, &readAccounts)
-
-	if err != nil {
-		b.Error(err)
-	}
-
-	b.StartTimer()
-	for _, acc := range readAccounts {
+	for _, acc := range benchAccounts {
 		b.RunParallel(func(pb *testing.PB) {
 			for pb.Next() {
 				_, err := GetAccount(acc)
@@ -60,12 +51,10 @@ func benchmarkReadAccounts(b *testing.B) {
 }
 
 func BenchmarkCreateAccounts(b *testing.B) {
-	b.StopTimer()
-	benchmarkCreateAccounts(b, 100)
+	benchmarkCreateAccounts(b, 10)
 }
 
 func BenchmarkReadAccounts(b *testing.B) {
-	b.StopTimer()
 	WaitForUpdater()
 	benchmarkReadAccounts(b)
 }

@@ -25,6 +25,7 @@ type fakeAccount struct {
 }
 
 var testAccount = model.NoBalanceAccount{Name: "TestUser", BIC: "TESTBIC", IBAN: "TESTIBAN"}
+var benchAccounts []model.Account
 
 var r *chi.Mux
 var testConfigPath = flag.String("testConfig", "./data/conf/testconfig.json", "Path to json formated testconfig")
@@ -293,6 +294,23 @@ func CreateRandomAccount() model.Account {
 	newAccount.Balance = RandNumberWithRange(200, 10000)
 
 	return newAccount
+}
+
+func CreateRandomAccounts(n int) []model.Account {
+	var accounts []model.Account
+
+	for i := 0; i < n; i++ {
+		var newAccount model.Account
+
+		newAccount.Name = fmt.Sprintf("RandomAccount%d", RandNumberWithRange(0, 1000))
+		newAccount.BIC = RandBIC()
+		newAccount.IBAN = RandIBAN()
+		newAccount.Balance = RandNumberWithRange(200, 10000)
+
+		accounts = append(accounts, newAccount)
+	}
+
+	return accounts
 }
 
 func CreateRandomTransaction(targetAcc model.Account, intendedUse string, value int32) model.Transaction {
