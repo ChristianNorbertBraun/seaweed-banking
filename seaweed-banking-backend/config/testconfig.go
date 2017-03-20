@@ -9,8 +9,9 @@ import (
 // TestConfig represents the configuration
 type TestConfig struct {
 	BicRunes          string `json:"bicrunes"`
+	IbanRunes         string `json:"ibanrunes"`
 	NoOfFakeAccounts  int    `json:"nooffakeaccounts"`
-	NoOfBenchAccounts int    `json:"noofbenchmarkaccounts"`
+	NoOfBenchAccounts int    `json:"noofbenchaccounts"`
 	UpdaterInterval   int    `json:"updaterinterval"`
 }
 

@@ -25,7 +25,8 @@ type fakeAccount struct {
 }
 
 var testAccount = model.NoBalanceAccount{Name: "TestUser", BIC: "TESTBIC", IBAN: "TESTIBAN"}
-var benchAccounts []model.Account
+
+// var benchAccounts []model.Account
 
 var r *chi.Mux
 var testConfigPath = flag.String("testConfig", "./data/conf/testconfig.json", "Path to json formated testconfig")
@@ -33,7 +34,6 @@ var testConfigPath = flag.String("testConfig", "./data/conf/testconfig.json", "P
 func TestMain(m *testing.M) {
 
 	setUp()
-	initBenchData()
 	test := m.Run()
 	os.Exit(test)
 }
@@ -56,22 +56,6 @@ func setUp() {
 	r.Get("/accounts/:bic/:iban", handler.GetAccount)
 	r.Get("/accounts/:bic/:iban/transactions", handler.GetAccountInfo)
 	r.Post("/accounts/:bic/:iban/transactions", handler.CreateTransactionAndUpdateBalance)
-}
-
-func initBenchData() {
-
-	if testing.Short() {
-		fmt.Println("Short flag set, Creating Data for Benchmark tests")
-
-		for i := 0; i < config.TestConfiguration.NoOfBenchAccounts; i++ {
-			newAcc := CreateRandomAccount()
-
-			benchAccounts = append(benchAccounts, newAcc)
-			PostAccount(newAcc)
-		}
-
-		WaitForUpdater()
-	}
 }
 
 /*
@@ -305,7 +289,7 @@ func CreateRandomAccount() model.Account {
 
 	var newAccount model.Account
 
-	newAccount.Name = fmt.Sprintf("RandomAccount%d", RandNumberWithRange(0, 99999))
+	newAccount.Name = fmt.Sprintf("RandomAccount%d", RandNumberWithRange(0, 999999))
 	newAccount.BIC = RandBIC()
 	newAccount.IBAN = RandIBAN()
 	newAccount.Balance = RandNumberWithRange(200, 999999)
@@ -319,10 +303,10 @@ func CreateRandomAccounts(n int) []model.Account {
 	for i := 0; i < n; i++ {
 		var newAccount model.Account
 
-		newAccount.Name = fmt.Sprintf("RandomAccount%d", RandNumberWithRange(0, 1000))
+		newAccount.Name = fmt.Sprintf("RandomAccount%d", RandNumberWithRange(0, 999999))
 		newAccount.BIC = RandBIC()
 		newAccount.IBAN = RandIBAN()
-		newAccount.Balance = RandNumberWithRange(200, 10000)
+		newAccount.Balance = RandNumberWithRange(200, 999999)
 
 		accounts = append(accounts, newAccount)
 	}
@@ -350,7 +334,7 @@ func RandBIC() string {
 
 	bicRunes := []rune(config.TestConfiguration.BicRunes)
 
-	b := make([]rune, 15)
+	b := make([]rune, 11)
 	num := rand.New(rand.NewSource(time.Now().UnixNano()))
 
 	for i := range b {
@@ -361,12 +345,22 @@ func RandBIC() string {
 
 func RandIBAN() string {
 
-	iban := "DE"
-	iban += fmt.Sprintf("%v%v", RandNumberWithRange(10000000000, 99999999999), RandNumberWithRange(10000000000, 99999999999))
+	ibanRunes := []rune(config.TestConfiguration.IbanRunes)
+
+	b := make([]rune, 2)
+	num := rand.New(rand.NewSource(time.Now().UnixNano()))
+
+	for i := range b {
+		b[i] = ibanRunes[num.Intn(len(ibanRunes))]
+	}
+
+	iban := string(b)
+	iban += fmt.Sprintf("%v%v%v%v", RandNumberWithRange(1000, 9999), RandNumberWithRange(1000, 9999), RandNumberWithRange(1000, 9999), RandNumberWithRange(1000, 9999))
 	return iban
 }
 
 func RandNumberWithRange(low, hi int) int32 {
+
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	num := low + r.Intn(hi-low)
 	return int32(num)

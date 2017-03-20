@@ -1,9 +1,33 @@
 package main
 
-import "testing"
+import (
+	"testing"
 
-func benchmarkCreateAccounts(b *testing.B) {
+	"github.com/ChristianNorbertBraun/seaweed-banking/seaweed-banking-backend/config"
+	"github.com/ChristianNorbertBraun/seaweed-banking/seaweed-banking-backend/model"
+)
+
+var benchAccounts []model.Account
+
+func initBenchData() {
+
+	if len(benchAccounts) <= 0 {
+
+		for i := 0; i < config.TestConfiguration.NoOfBenchAccounts; i++ {
+			newAcc := CreateRandomAccount()
+			PostAccount(newAcc)
+			benchAccounts = append(benchAccounts, newAcc)
+		}
+
+		WaitForUpdater()
+
+	}
+}
+
+func benchmarkPostAccounts(b *testing.B) {
+
 	for i := 0; i < b.N; i++ {
+
 		err := PostAccount(CreateRandomAccount())
 
 		if err != nil {
@@ -12,7 +36,7 @@ func benchmarkCreateAccounts(b *testing.B) {
 	}
 }
 
-func benchmarkCreateAccountParallel(b *testing.B) {
+func benchmarkCreateAccountsParallel(b *testing.B) {
 
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
@@ -25,11 +49,15 @@ func benchmarkCreateAccountParallel(b *testing.B) {
 	})
 }
 
-func benchmarkReadAccounts(b *testing.B) {
+func benchmarkGetAccounts(b *testing.B) {
+
+	initBenchData()
+
+	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
 
-		_, err := GetAccount(benchAccounts[RandNumberWithRange(0, len(benchAccounts)-1)])
+		_, err := GetAccount(benchAccounts[RandNumberWithRange(0, len(benchAccounts))])
 
 		if err != nil {
 			b.Error(err)
@@ -39,9 +67,13 @@ func benchmarkReadAccounts(b *testing.B) {
 
 func benchmarkReadAccountsParallel(b *testing.B) {
 
+	initBenchData()
+
+	b.ResetTimer()
+
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			_, err := GetAccount(benchAccounts[RandNumberWithRange(0, len(benchAccounts)-1)])
+			_, err := GetAccount(benchAccounts[RandNumberWithRange(0, len(benchAccounts))])
 
 			if err != nil {
 				b.Error(err)
@@ -51,6 +83,11 @@ func benchmarkReadAccountsParallel(b *testing.B) {
 }
 
 func benchmarkGetAllAccounts(b *testing.B) {
+
+	initBenchData()
+
+	b.ResetTimer()
+
 	for i := 0; i < b.N; i++ {
 		_, err := GetAllAccounts()
 
@@ -61,6 +98,10 @@ func benchmarkGetAllAccounts(b *testing.B) {
 }
 
 func benchmarkGetAllAccountsParallel(b *testing.B) {
+
+	initBenchData()
+
+	b.ResetTimer()
 
 	b.RunParallel(func(pb *testing.PB) {
 
@@ -74,11 +115,16 @@ func benchmarkGetAllAccountsParallel(b *testing.B) {
 	})
 }
 
-func benchmarkReadAndWriteAccounts(b *testing.B, writeRatio, readRatio int) {
+func benchmarkReadAndWriteAccounts(b *testing.B, readRatio, writeRatio int) {
+
+	initBenchData()
+
+	b.ResetTimer()
+
 	for i := 0; i < b.N; i++ {
 
 		if i%readRatio == 0 {
-			_, err := GetAccount(benchAccounts[RandNumberWithRange(0, len(benchAccounts)-1)])
+			_, err := GetAccount(benchAccounts[RandNumberWithRange(0, len(benchAccounts))])
 
 			if err != nil {
 				b.Error(err)
@@ -86,23 +132,26 @@ func benchmarkReadAndWriteAccounts(b *testing.B, writeRatio, readRatio int) {
 		}
 
 		if i%writeRatio == 0 {
-			err := PostAccount(CreateRandomAccount())
+			newAcc := CreateRandomAccount()
+			err := PostAccount(newAcc)
 
 			if err != nil {
 				b.Error(err)
 			}
-
 		}
-
 	}
 }
 
-func BenchmarkCreateAccounts(b *testing.B)            { benchmarkCreateAccounts(b) }
+func BenchmarkCreateAccounts(b *testing.B)            { benchmarkPostAccounts(b) }
 func BenchmarkGetAllAccounts(b *testing.B)            { benchmarkGetAllAccounts(b) }
-func BenchmarkReadAccounts(b *testing.B)              { benchmarkReadAccounts(b) }
+func BenchmarkGetAccounts(b *testing.B)               { benchmarkGetAccounts(b) }
+func BenchmarkReadAndWriteAccounts90_10(b *testing.B) { benchmarkReadAndWriteAccounts(b, 1, 9) }
+func BenchmarkReadAndWriteAccounts80_20(b *testing.B) { benchmarkReadAndWriteAccounts(b, 1, 4) }
+func BenchmarkReadAndWriteAccounts60_40(b *testing.B) { benchmarkReadAndWriteAccounts(b, 2, 3) }
 func BenchmarkReadAndWriteAccounts50_50(b *testing.B) { benchmarkReadAndWriteAccounts(b, 1, 1) }
-func BenchmarkReadAndWriteAccounts10_90(b *testing.B) { benchmarkReadAndWriteAccounts(b, 1, 9) }
-func BenchmarkReadAndWriteAccounts90_10(b *testing.B) { benchmarkReadAndWriteAccounts(b, 9, 1) }
+func BenchmarkReadAndWriteAccounts40_60(b *testing.B) { benchmarkReadAndWriteAccounts(b, 3, 2) }
+func BenchmarkReadAndWriteAccounts20_80(b *testing.B) { benchmarkReadAndWriteAccounts(b, 4, 1) }
+func BenchmarkReadAndWriteAccounts10_90(b *testing.B) { benchmarkReadAndWriteAccounts(b, 9, 1) }
 
 // Parallel testing throws a lot of errors,
 // func BenchmarkCreateAccountsParallel(b *testing.B) { BenchmarkCreateAccountsParallel(b) }

@@ -1,6 +1,7 @@
 {
   "bicrunes": "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789",
+  "ibanrunes": "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
   "nooffakeaccounts": 4,
-  "noofbenchmarkaccounts": 10,
+  "noofbenchaccounts": 100,
   "updaterinterval": 10
 }
