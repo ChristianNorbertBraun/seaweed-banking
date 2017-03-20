@@ -33,6 +33,7 @@ var testConfigPath = flag.String("testConfig", "./data/conf/testconfig.json", "P
 func TestMain(m *testing.M) {
 
 	setUp()
+	initBenchData()
 	test := m.Run()
 	os.Exit(test)
 }
@@ -55,6 +56,22 @@ func setUp() {
 	r.Get("/accounts/:bic/:iban", handler.GetAccount)
 	r.Get("/accounts/:bic/:iban/transactions", handler.GetAccountInfo)
 	r.Post("/accounts/:bic/:iban/transactions", handler.CreateTransactionAndUpdateBalance)
+}
+
+func initBenchData() {
+
+	if testing.Short() {
+		fmt.Println("Short flag set, Creating Data for Benchmark tests")
+
+		for i := 0; i < config.TestConfiguration.NoOfBenchAccounts; i++ {
+			newAcc := CreateRandomAccount()
+
+			benchAccounts = append(benchAccounts, newAcc)
+			PostAccount(newAcc)
+		}
+
+		WaitForUpdater()
+	}
 }
 
 /*
@@ -204,7 +221,7 @@ func GetAccount(account model.Account) ([]byte, error) {
 	r.ServeHTTP(writer, request)
 
 	if writer.Code != http.StatusOK {
-		return nil, fmt.Errorf("GetAllAccounts: %v \nResponse Code: %v",
+		return nil, fmt.Errorf("GetAccount: %v \nResponse Code: %v",
 			request.URL.String(),
 			writer.Code)
 	}
@@ -288,10 +305,10 @@ func CreateRandomAccount() model.Account {
 
 	var newAccount model.Account
 
-	newAccount.Name = fmt.Sprintf("RandomAccount%d", RandNumberWithRange(0, 1000))
+	newAccount.Name = fmt.Sprintf("RandomAccount%d", RandNumberWithRange(0, 99999))
 	newAccount.BIC = RandBIC()
 	newAccount.IBAN = RandIBAN()
-	newAccount.Balance = RandNumberWithRange(200, 10000)
+	newAccount.Balance = RandNumberWithRange(200, 999999)
 
 	return newAccount
 }
@@ -333,7 +350,7 @@ func RandBIC() string {
 
 	bicRunes := []rune(config.TestConfiguration.BicRunes)
 
-	b := make([]rune, 11)
+	b := make([]rune, 15)
 	num := rand.New(rand.NewSource(time.Now().UnixNano()))
 
 	for i := range b {
@@ -345,7 +362,7 @@ func RandBIC() string {
 func RandIBAN() string {
 
 	iban := "DE"
-	iban += fmt.Sprintf("%v%v", RandNumberWithRange(100000000, 999999999), RandNumberWithRange(100000000, 999999999))
+	iban += fmt.Sprintf("%v%v", RandNumberWithRange(10000000000, 99999999999), RandNumberWithRange(10000000000, 99999999999))
 	return iban
 }
 
