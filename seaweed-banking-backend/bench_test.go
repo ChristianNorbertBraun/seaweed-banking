@@ -36,7 +36,7 @@ func benchmarkPostAccounts(b *testing.B) {
 	}
 }
 
-func benchmarkCreateAccountsParallel(b *testing.B) {
+func benchmarkPostAccountsParallel(b *testing.B) {
 
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
@@ -50,34 +50,48 @@ func benchmarkCreateAccountsParallel(b *testing.B) {
 }
 
 func benchmarkGetAccounts(b *testing.B) {
-
+	var index = 0
 	initBenchData()
 
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
 
-		_, err := GetAccount(benchAccounts[RandNumberWithRange(0, len(benchAccounts))])
+		if index >= len(benchAccounts) {
+			index = 0
+		}
+
+		_, err := GetAccount(benchAccounts[index])
 
 		if err != nil {
 			b.Error(err)
 		}
+
+		index++
 	}
+
 }
 
-func benchmarkReadAccountsParallel(b *testing.B) {
-
+func benchmarkGetAccountsParallel(b *testing.B) {
+	var index = 0
 	initBenchData()
 
 	b.ResetTimer()
 
+	b.SetParallelism(5)
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			_, err := GetAccount(benchAccounts[RandNumberWithRange(0, len(benchAccounts))])
+
+			if index >= len(benchAccounts) {
+				index = 0
+			}
+			_, err := GetAccount(benchAccounts[index])
 
 			if err != nil {
 				b.Error(err)
 			}
+
+			index++
 		}
 	})
 }
@@ -102,7 +116,7 @@ func benchmarkGetAllAccountsParallel(b *testing.B) {
 	initBenchData()
 
 	b.ResetTimer()
-
+	b.SetParallelism(5)
 	b.RunParallel(func(pb *testing.PB) {
 
 		for pb.Next() {
@@ -116,7 +130,7 @@ func benchmarkGetAllAccountsParallel(b *testing.B) {
 }
 
 func benchmarkReadAndWriteAccounts(b *testing.B, readRatio, writeRatio int) {
-
+	var index = 0
 	initBenchData()
 
 	b.ResetTimer()
@@ -124,11 +138,19 @@ func benchmarkReadAndWriteAccounts(b *testing.B, readRatio, writeRatio int) {
 	for i := 0; i < b.N; i++ {
 
 		if i%readRatio == 0 {
-			_, err := GetAccount(benchAccounts[RandNumberWithRange(0, len(benchAccounts))])
+
+			if index >= len(benchAccounts) {
+				index = 0
+			}
+
+			_, err := GetAccount(benchAccounts[index])
 
 			if err != nil {
 				b.Error(err)
 			}
+
+			index++
+
 		}
 
 		if i%writeRatio == 0 {
@@ -142,7 +164,7 @@ func benchmarkReadAndWriteAccounts(b *testing.B, readRatio, writeRatio int) {
 	}
 }
 
-func BenchmarkCreateAccounts(b *testing.B)            { benchmarkPostAccounts(b) }
+func BenchmarkPostAccounts(b *testing.B)              { benchmarkPostAccounts(b) }
 func BenchmarkGetAllAccounts(b *testing.B)            { benchmarkGetAllAccounts(b) }
 func BenchmarkGetAccounts(b *testing.B)               { benchmarkGetAccounts(b) }
 func BenchmarkReadAndWriteAccounts90_10(b *testing.B) { benchmarkReadAndWriteAccounts(b, 1, 9) }
@@ -153,7 +175,7 @@ func BenchmarkReadAndWriteAccounts40_60(b *testing.B) { benchmarkReadAndWriteAcc
 func BenchmarkReadAndWriteAccounts20_80(b *testing.B) { benchmarkReadAndWriteAccounts(b, 4, 1) }
 func BenchmarkReadAndWriteAccounts10_90(b *testing.B) { benchmarkReadAndWriteAccounts(b, 9, 1) }
 
-// Parallel testing throws a lot of errors,
-// func BenchmarkCreateAccountsParallel(b *testing.B) { BenchmarkCreateAccountsParallel(b) }
+// With parallel testing, CreateRandomAccounts throws errors cause of math/rand mutex issue
+// func BenchmarkGetAccountsParallel(b *testing.B)    { benchmarkGetAccountsParallel(b) }
 // func BenchmarkGetAllAccountsParallel(b *testing.B) { benchmarkGetAllAccountsParallel(b) }
-// func BenchmarkReadAccountsParallel(b *testing.B)   { benchmarkReadAccountsParallel(b) }
+// func BenchmarkPostAccountsParallel(b *testing.B) { BenchmarkPostAccountsParallel(b) }
