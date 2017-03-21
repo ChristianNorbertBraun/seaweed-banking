@@ -20,7 +20,6 @@ func initBenchData() {
 		}
 
 		WaitForUpdater()
-
 	}
 }
 
@@ -28,7 +27,11 @@ func benchmarkPostAccounts(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 
-		err := PostAccount(CreateRandomAccount())
+		b.StopTimer()
+		newAcc := CreateRandomAccount()
+		b.StartTimer()
+
+		err := PostAccount(newAcc)
 
 		if err != nil {
 			b.Error(err)
@@ -40,7 +43,11 @@ func benchmarkPostAccountsParallel(b *testing.B) {
 
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			err := PostAccount(CreateRandomAccount())
+			b.StopTimer()
+			newAcc := CreateRandomAccount()
+			b.StartTimer()
+
+			err := PostAccount(newAcc)
 
 			if err != nil {
 				b.Error(err)
@@ -50,10 +57,11 @@ func benchmarkPostAccountsParallel(b *testing.B) {
 }
 
 func benchmarkGetAccounts(b *testing.B) {
+
+	b.StopTimer()
 	var index = 0
 	initBenchData()
-
-	b.ResetTimer()
+	b.StartTimer()
 
 	for i := 0; i < b.N; i++ {
 
@@ -73,11 +81,13 @@ func benchmarkGetAccounts(b *testing.B) {
 }
 
 func benchmarkGetAccountsParallel(b *testing.B) {
+
+	b.StopTimer()
 	var index = 0
 	initBenchData()
+	b.StartTimer()
 
-	b.ResetTimer()
-
+	// Sets number of threads, cause parallel benchmarks didnt work properly atm the number of threads wasnt parameterized
 	b.SetParallelism(5)
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
@@ -98,9 +108,9 @@ func benchmarkGetAccountsParallel(b *testing.B) {
 
 func benchmarkGetAllAccounts(b *testing.B) {
 
+	b.StopTimer()
 	initBenchData()
-
-	b.ResetTimer()
+	b.StartTimer()
 
 	for i := 0; i < b.N; i++ {
 		_, err := GetAllAccounts()
@@ -113,9 +123,10 @@ func benchmarkGetAllAccounts(b *testing.B) {
 
 func benchmarkGetAllAccountsParallel(b *testing.B) {
 
+	b.StopTimer()
 	initBenchData()
+	b.StartTimer()
 
-	b.ResetTimer()
 	b.SetParallelism(5)
 	b.RunParallel(func(pb *testing.PB) {
 
@@ -130,10 +141,11 @@ func benchmarkGetAllAccountsParallel(b *testing.B) {
 }
 
 func benchmarkReadAndWriteAccounts(b *testing.B, readRatio, writeRatio int) {
+
+	b.StopTimer()
 	var index = 0
 	initBenchData()
-
-	b.ResetTimer()
+	b.StartTimer()
 
 	for i := 0; i < b.N; i++ {
 
@@ -154,7 +166,11 @@ func benchmarkReadAndWriteAccounts(b *testing.B, readRatio, writeRatio int) {
 		}
 
 		if i%writeRatio == 0 {
+
+			b.StopTimer()
 			newAcc := CreateRandomAccount()
+			b.StartTimer()
+
 			err := PostAccount(newAcc)
 
 			if err != nil {
