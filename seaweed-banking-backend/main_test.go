@@ -26,13 +26,14 @@ type fakeAccount struct {
 
 var testAccount = model.NoBalanceAccount{Name: "TestUser", BIC: "TESTBIC", IBAN: "TESTIBAN"}
 
+// var benchAccounts []model.Account
+
 var r *chi.Mux
 var testConfigPath = flag.String("testConfig", "./data/conf/testconfig.json", "Path to json formated testconfig")
 
 func TestMain(m *testing.M) {
 
 	setUp()
-	initBenchmarkData()
 	test := m.Run()
 	os.Exit(test)
 }
@@ -57,24 +58,23 @@ func setUp() {
 	r.Post("/accounts/:bic/:iban/transactions", handler.CreateTransactionAndUpdateBalance)
 }
 
-func initBenchmarkData() {
-
-}
-
 /*
 *	TEST CASES
  */
 
 func TestAccountsCreate(t *testing.T) {
 
+	if testing.Short() {
+		t.Skip("Skip Integration Tests if Short flag is set")
+	}
+
 	var testAccounts []model.Account
 
 	for i := 0; i < config.TestConfiguration.NoOfFakeAccounts; i++ {
-		testAccounts = append(testAccounts, CreateRandomAccount())
-	}
+		newAccount := CreateRandomAccount()
+		testAccounts = append(testAccounts, newAccount)
 
-	for _, account := range testAccounts {
-		err := PostAccount(account)
+		err := PostAccount(newAccount)
 
 		if err != nil {
 			t.Error(err)
@@ -93,6 +93,10 @@ func TestAccountsCreate(t *testing.T) {
 }
 
 func TestTransactionsCreate(t *testing.T) {
+
+	if testing.Short() {
+		t.Skip("Skip Integration Tests if Short flag is set")
+	}
 
 	var testData []fakeAccount
 
@@ -201,7 +205,7 @@ func GetAccount(account model.Account) ([]byte, error) {
 	r.ServeHTTP(writer, request)
 
 	if writer.Code != http.StatusOK {
-		return nil, fmt.Errorf("GetAllAccounts: %v \nResponse Code: %v",
+		return nil, fmt.Errorf("GetAccount: %v \nResponse Code: %v",
 			request.URL.String(),
 			writer.Code)
 	}
@@ -285,12 +289,29 @@ func CreateRandomAccount() model.Account {
 
 	var newAccount model.Account
 
-	newAccount.Name = fmt.Sprintf("RandomAccount%d", RandNumberWithRange(0, 10))
+	newAccount.Name = fmt.Sprintf("RandomAccount%d", RandNumberWithRange(0, 999999))
 	newAccount.BIC = RandBIC()
-	newAccount.IBAN = RandIBAN("DE")
-	newAccount.Balance = RandNumberWithRange(200, 10000)
+	newAccount.IBAN = RandIBAN()
+	newAccount.Balance = RandNumberWithRange(200, 999999)
 
 	return newAccount
+}
+
+func CreateRandomAccounts(n int) []model.Account {
+	var accounts []model.Account
+
+	for i := 0; i < n; i++ {
+		var newAccount model.Account
+
+		newAccount.Name = fmt.Sprintf("RandomAccount%d", RandNumberWithRange(0, 999999))
+		newAccount.BIC = RandBIC()
+		newAccount.IBAN = RandIBAN()
+		newAccount.Balance = RandNumberWithRange(200, 999999)
+
+		accounts = append(accounts, newAccount)
+	}
+
+	return accounts
 }
 
 func CreateRandomTransaction(targetAcc model.Account, intendedUse string, value int32) model.Transaction {
@@ -322,15 +343,25 @@ func RandBIC() string {
 	return string(b)
 }
 
-func RandIBAN(country string) string {
+func RandIBAN() string {
 
-	iban := country
-	iban += fmt.Sprintf("%v%v", RandNumberWithRange(100000000, 999999999), RandNumberWithRange(100000000, 999999999))
+	ibanRunes := []rune(config.TestConfiguration.IbanRunes)
+
+	b := make([]rune, 2)
+	num := rand.New(rand.NewSource(time.Now().UnixNano()))
+
+	for i := range b {
+		b[i] = ibanRunes[num.Intn(len(ibanRunes))]
+	}
+
+	iban := string(b)
+	iban += fmt.Sprintf("%v%v%v%v", RandNumberWithRange(1000, 9999), RandNumberWithRange(1000, 9999), RandNumberWithRange(1000, 9999), RandNumberWithRange(1000, 9999))
 	return iban
 }
 
 func RandNumberWithRange(low, hi int) int32 {
 
-	num := low + rand.Intn(hi-low)
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	num := low + r.Intn(hi-low)
 	return int32(num)
 }

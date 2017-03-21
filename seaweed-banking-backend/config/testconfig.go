@@ -8,9 +8,11 @@ import (
 
 // TestConfig represents the configuration
 type TestConfig struct {
-	BicRunes         string `json:"bicrunes"`
-	NoOfFakeAccounts int    `json:"nooffakeaccounts"`
-	UpdaterInterval  int    `json:"updaterinterval"`
+	BicRunes          string `json:"bicrunes"`
+	IbanRunes         string `json:"ibanrunes"`
+	NoOfFakeAccounts  int    `json:"nooffakeaccounts"`
+	NoOfBenchAccounts int    `json:"noofbenchaccounts"`
+	UpdaterInterval   int    `json:"updaterinterval"`
 }
 
 var TestConfiguration TestConfig
