@@ -61,3 +61,35 @@ curl --data '{"bic": "1234","iban": "iban1234","balance": 123}' localhost:3333/a
 // read accountinfo
 curl localhost:3333/accounts/1234/iban1234/transactions?from=2017-02-16_13:05:00
 ```
+
+ ## testing
+at seaweed-banking you can either execute startTest.sh for automate integration testing, or use startSystem.sh to just automate system startup and test manually at seaweed-backing-backend
+
+for testing manually several flags can configure the testing behaviour
+
+execute go test
+
+and optional:
+
+// additional log information
+-v 
+
+// skip integration testing
+-short
+
+// execute all benchmark tests
+-bench=.
+
+// execute particular function by typing the FunctionName without "Benchmark"
+// e.g. for testing BenchmarkReadAndWriteAccounts50_50():
+ go test -v -short -bench=ReadAndWriteAccounts50_50
+
+ // without additional configuration, Benchmark tests always process the amount of iterations
+ // needed to satisfy the Benchmark runner (means like having a stable median of the time needed for each iteration or so)
+
+ // It is also possible to set a fixed benchmark time; for time type e.g. 5s
+ go test -v -short -bench={FunctionName or .} -benchtime={time}
+
+
+
+
