@@ -115,9 +115,10 @@ func CreateAccount(account model.Account) error {
 	}
 
 	if err := createAccountInfo(account); err != nil {
-		log.Printf("Unable to create account info for bic %s, iban %s",
+		log.Printf("Unable to create account info for bic %s, iban %s: %s",
 			account.BIC,
-			account.IBAN)
+			account.IBAN,
+			err.Error())
 
 		return err
 	}

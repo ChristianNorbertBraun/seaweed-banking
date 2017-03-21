@@ -13,7 +13,7 @@ const (
 
 // Transaction represents a complete transaction from one account
 type Transaction struct {
-	Recipient           NoBalanceAccount `json:"receipient"`
+	Recipient           NoBalanceAccount `json:"recipient"`
 	Sender              NoBalanceAccount `json:"sender"`
 	BookingDate         time.Time        `json:"bookingDate"`
 	Currency            Currency         `json:"currency"`
