@@ -30,6 +30,7 @@ func configureDb() {
 	}
 
 	log.Println("DB initialized")
+
 	Connection = con
 }
 

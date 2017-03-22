@@ -38,7 +38,8 @@ func CreateTransactionAndUpdateBalance(w http.ResponseWriter, r *http.Request) {
 
 		if err := database.UpdateAccountBalance(transaction, createTransactionInDFS); err != nil {
 			render.Status(r, http.StatusBadRequest)
-			render.JSON(w, r, http.StatusText(http.StatusBadRequest))
+			log.Println("Error  while creating transaction: ", err.Error())
+			render.JSON(w, r, err.Error())
 		}
 
 		render.Status(r, http.StatusCreated)

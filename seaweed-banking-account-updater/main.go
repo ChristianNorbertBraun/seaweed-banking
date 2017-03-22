@@ -45,7 +45,7 @@ func init() {
 
 	database.Configure()
 	if *master {
-		worker.SetUpUpdateWorker(10 * time.Second)
+		worker.SetUpUpdateWorker(20 * time.Second)
 	} else {
 		worker.SetUpSlavePing(time.Minute)
 	}

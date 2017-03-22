@@ -74,5 +74,5 @@ func main() {
 		":" +
 		config.Configuration.Server.Port
 
-	http.ListenAndServe(serverURL, r)
+	log.Println(http.ListenAndServe(serverURL, r))
 }
