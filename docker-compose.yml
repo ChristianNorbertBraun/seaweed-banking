@@ -18,8 +18,3 @@ services:
       - 9333:9333
       - 8080:8080
     command: 'server -master.port=9333 -volume.port=8080 -filer=true -volume.publicUrl http://docker:8080'
-  mongo:
-    container_name: account-updater-mongo
-    image: mongo
-    ports:
-      - 27017:27017
