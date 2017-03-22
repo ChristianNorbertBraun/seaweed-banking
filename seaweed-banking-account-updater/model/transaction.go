@@ -35,3 +35,7 @@ func (slice Transactions) Less(i, j int) bool {
 func (slice Transactions) Swap(i, j int) {
 	slice[i], slice[j] = slice[j], slice[i]
 }
+
+func (slice Transactions) Last() *Transaction {
+	return slice[len(slice)-1]
+}

@@ -3,6 +3,7 @@ package handler
 import (
 	"log"
 	"net/http"
+
 	"time"
 
 	"github.com/ChristianNorbertBraun/seaweed-banking/seaweed-banking-account-updater/database"
@@ -12,7 +13,7 @@ import (
 
 // ReadAllUpdates returns all updates
 func ReadAllUpdates(w http.ResponseWriter, r *http.Request) {
-	updates, err := database.FindAllUpdates()
+	updates, err := database.GetAllUpdates()
 
 	if err != nil {
 		render.Status(r, http.StatusBadRequest)
@@ -21,27 +22,6 @@ func ReadAllUpdates(w http.ResponseWriter, r *http.Request) {
 	}
 
 	render.JSON(w, r, updates)
-}
-
-// CreateUpdate transforms the given transaction into an update
-// and saves it
-func CreateUpdate(w http.ResponseWriter, r *http.Request) {
-	var transaction model.Transaction
-
-	if err := render.Bind(r.Body, &transaction); err != nil {
-		render.Status(r, http.StatusBadRequest)
-		render.JSON(w, r, err.Error())
-		return
-	}
-
-	update := model.NewUpdate(transaction)
-	if err := database.InsertUpdate(update); err != nil {
-		render.Status(r, http.StatusBadRequest)
-		render.JSON(w, r, err.Error())
-		return
-	}
-
-	render.JSON(w, r, update)
 }
 
 // RunUpdates executes the creation of the account info for the given updates
@@ -72,72 +52,66 @@ func UpdateAccountInfo(updates []*model.Update) {
 				return
 			}
 
-			if err = deleteUpdateWhenAlreadyUpToDate(accountInfo, current); err != nil {
-				log.Println("Unable to delete stale update:", err)
-				return
-			}
-
 			log.Println("About to get all Transactions after", accountInfo.LatestTransaction)
-			transactionsToUpdate, err := database.GetAllTransactionsForAccountAfter(
+			log.Println("Length of latestAccountInfo", len(accountInfo.Transactions))
+			transactionsToUpdate, err := database.GetAllPendingTransactionsForAccount(
 				current.BIC,
-				current.IBAN,
-				accountInfo.LatestTransaction)
+				current.IBAN)
 			log.Println("Got all Transactions: ", len(transactionsToUpdate))
 
 			if err != nil {
-				log.Println("Unable to fetch transactions after: ", accountInfo.LatestTransaction)
-				log.Println("Error was: ", err)
+				log.Println("Error: ", err)
 
 				return
 			}
 
-			if err = mergeTransactionsAndSaveAccountInfo(accountInfo, transactionsToUpdate); err != nil {
+			if accountInfo, err = mergeTransactionsAndSaveAccountInfo(accountInfo, transactionsToUpdate); err != nil {
 				log.Println("Can't create new account info for", current.BIC, current.IBAN)
 
 				return
 			}
+
 			if err = database.CreateAccountInfo(accountInfo); err != nil {
 				log.Println("Can't create new account info for", current.BIC, current.IBAN)
 
 				return
 			}
-			log.Println("Done with updating for ", current.BIC, current.IBAN)
+
+			writtenAccountInfo, _ := database.GetLatestAccountInfo(accountInfo.BIC, accountInfo.IBAN)
+
+			latestTransaction, _ := time.Parse(time.RFC3339Nano, writtenAccountInfo.LatestTransaction)
+			if latestTransaction.Equal(transactionsToUpdate.Last().BookingDate) {
+				if err = database.DeletePendingTransactions(transactionsToUpdate); err != nil {
+					log.Println("Can`t delete transactions for", accountInfo.BIC, accountInfo.IBAN, err)
+
+					return
+				}
+				log.Println("Done with updating for ", current.BIC, current.IBAN)
+			}
 		}(update)
 	}
 }
 
-func deleteUpdateWhenAlreadyUpToDate(accountInfo *model.AccountInfo, update *model.Update) error {
-	latestTransactionTime, _ := time.Parse(time.RFC3339Nano, accountInfo.LatestTransaction)
-	log.Println("Accountinfo time: ", accountInfo.LatestTransaction)
-	log.Println("Update last transaction: ", update.LastTransaction.Format(time.RFC3339Nano))
-	if latestTransactionTime.
-		After(update.LastTransaction) {
-		log.Printf("AccountInfo already up to date for bic: %s iban: %s", accountInfo.BIC, accountInfo.IBAN)
-		if err := database.DeleteUpdate(update.BIC, update.IBAN); err != nil {
-			log.Printf("Unable to delete update for bic: %s iban: %s", accountInfo.BIC, accountInfo.IBAN)
-			return err
-		}
-
-		if err := database.DeleteTransactionsFromBook(update); err != nil {
-			log.Printf("Unable to delete book entries for bic: %s iban: %s", accountInfo.BIC, accountInfo.IBAN)
-			return err
-		}
-		log.Printf("Deleted update and book entries for bic: %s iban: %s", accountInfo.BIC, accountInfo.IBAN)
-
-	}
-	return nil
-}
-
-func mergeTransactionsAndSaveAccountInfo(accountInfo *model.AccountInfo, transactions model.Transactions) error {
+func mergeTransactionsAndSaveAccountInfo(accountInfo *model.AccountInfo, transactions model.Transactions) (*model.AccountInfo, error) {
 	var err error
 	for _, transaction := range transactions {
+
+		oldestTransaction, _ := time.Parse(time.RFC3339Nano, (*accountInfo).OldestTransaction)
+		latestTransaction, _ := time.Parse(time.RFC3339Nano, (*accountInfo).LatestTransaction)
+		if transaction.BookingDate.Before(oldestTransaction) ||
+			transaction.BookingDate.Before(latestTransaction) {
+			log.Println("Somthing is really really bad")
+
+			return nil, nil
+		}
 		added, newAccountInfo := accountInfo.AddTransaction(transaction)
 
 		if !added {
 			err = database.CreateAccountInfo(accountInfo)
+
 			accountInfo = newAccountInfo
 		}
 	}
 
-	return err
+	return accountInfo, err
 }

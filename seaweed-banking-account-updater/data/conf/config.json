@@ -1,7 +1,6 @@
 {
     "db": {
-        "url": "docker",
-        "dbname": "account-updates"
+         "url": "postgres://go:go@docker/go?sslmode=disable"
     },
     "server": {
         "host": "localhost",

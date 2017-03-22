@@ -13,6 +13,7 @@ import (
 	"github.com/ChristianNorbertBraun/seaweed-banking/seaweed-banking-account-updater/database"
 	"github.com/ChristianNorbertBraun/seaweed-banking/seaweed-banking-account-updater/handler"
 	"github.com/ChristianNorbertBraun/seaweed-banking/seaweed-banking-account-updater/worker"
+	_ "github.com/lib/pq"
 	"github.com/pressly/chi"
 	"github.com/pressly/chi/docgen"
 	"github.com/pressly/chi/middleware"
@@ -20,6 +21,7 @@ import (
 )
 
 var routes = flag.Bool("routes", false, "Generate router documentation")
+var updateRate = flag.Duration("updateRate", 10*time.Second, "Time between two updates")
 var configPath = flag.String("config", "./data/conf/config.json", "Path to json formated config")
 var master = flag.Bool("master", false, "Declare update service as master")
 var port = flag.String("port", "", "Declare port for updater")
@@ -45,7 +47,7 @@ func init() {
 
 	database.Configure()
 	if *master {
-		worker.SetUpUpdateWorker(20 * time.Second)
+		worker.SetUpUpdateWorker(*updateRate)
 	} else {
 		worker.SetUpSlavePing(time.Minute)
 	}
@@ -74,7 +76,6 @@ func main() {
 
 	r.Route("/updates", func(r chi.Router) {
 		r.Get("/", handler.ReadAllUpdates)
-		r.Post("/", handler.CreateUpdate)
 	})
 
 	if *routes {

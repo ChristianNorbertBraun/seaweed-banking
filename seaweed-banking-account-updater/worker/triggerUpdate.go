@@ -40,7 +40,7 @@ func StopTicker(ticker *time.Ticker) {
 }
 
 func runUpdate() {
-	updates, err := database.FindAllUpdates()
+	updates, err := database.GetAllUpdates()
 	if err != nil {
 		log.Println("Unable to get updates", err)
 

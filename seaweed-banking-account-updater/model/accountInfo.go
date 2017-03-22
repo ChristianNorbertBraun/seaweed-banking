@@ -20,7 +20,7 @@ type AccountInfo struct {
 
 // MaxTransactionsPerAccountInfo represents the maximum number of transaction stored
 // within a single AccountInfo
-const MaxTransactionsPerAccountInfo = 10
+const MaxTransactionsPerAccountInfo = 50
 
 // NewAccountInfo creates a new accountInfo
 func NewAccountInfo(name string, bic string, iban string, balance int32, predeccessor string) *AccountInfo {

@@ -1,39 +1,47 @@
 package database
 
 import (
+	"database/sql"
 	"log"
 
 	weedharvester "github.com/ChristianNorbertBraun/Weedharvester"
 	"github.com/ChristianNorbertBraun/seaweed-banking/seaweed-banking-account-updater/config"
-	mgo "gopkg.in/mgo.v2"
 )
 
-var session *mgo.Session
+// Connection contains the open db connection
+var Connection *sql.DB
 var filer weedharvester.Filer
 
-// Configure establish connection to mongodb
+// Configure sets the db urls
 func Configure() {
-	configureMongodb()
+	configureDb()
 	configureSeaweedFiler()
 }
 
-func configureMongodb() {
-	s, err := mgo.Dial(config.Configuration.Db.URL)
-
+func configureDb() {
+	con, err := sql.Open("postgres", config.Configuration.Db.URL)
 	if err != nil {
-		log.Fatal("Could not connect to mongodb: ", err)
+		log.Fatal("Could not open DB: ", err)
 	}
-	session = s
-	log.Print("Connected to mongodb: ", config.Configuration.Db.URL)
+
+	err = con.Ping()
+	if err != nil {
+		log.Fatal("Could not open DB: ", err)
+	}
+
+	log.Println("DB initialized")
+
+	Connection = con
 }
 
 func configureSeaweedFiler() {
 	fil := weedharvester.NewFiler(config.Configuration.Seaweed.FilerURL)
+	err := fil.Ping()
 
-	if err := fil.Ping(); err != nil {
-		log.Fatal("Could not connect to filer: ", config.Configuration.Seaweed.FilerURL)
+	if err != nil {
+		log.Fatal("Could not connect to seaweed filer: ", err)
 	}
 
+	log.Println("Connected to filer: ", config.Configuration.Seaweed.FilerURL)
 	filer = fil
-	log.Print("Connected to seaweed filer at: ", config.Configuration.Seaweed.FilerURL)
 }

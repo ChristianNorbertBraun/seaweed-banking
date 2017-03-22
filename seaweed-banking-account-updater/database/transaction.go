@@ -1,57 +1,71 @@
 package database
 
 import (
-	"fmt"
-	"io"
+	"time"
 
-	"encoding/json"
-
-	weedharvester "github.com/ChristianNorbertBraun/Weedharvester"
-	"github.com/ChristianNorbertBraun/seaweed-banking/seaweed-banking-account-updater/config"
 	"github.com/ChristianNorbertBraun/seaweed-banking/seaweed-banking-account-updater/model"
 )
 
-//GetAllTransactionsForAccountAfter fetches all transaction from seaweed which occured after
-// the given time as a string. The time has to be formated in time.RFC3339Nano
-func GetAllTransactionsForAccountAfter(bic string, iban string, time string) (model.Transactions, error) {
-	path := fmt.Sprintf("%s/%s/%s",
-		config.Configuration.Seaweed.BookFolder,
+func GetAllPendingTransactionsForAccount(bic string, iban string) (model.Transactions, error) {
+	rows, err := Connection.Query(
+		`SELECT recipientName, recipientBic, recipientIban,
+		senderName, senderBic, senderIban,
+		valueInSmallestUnit, currency, bookingDate, intendedUse
+		FROM latestTransaction WHERE recipientBic = $1 AND recipientIban = $2 ORDER BY bookingDate`,
 		bic,
 		iban)
 
-	transactionsInDirectory, err := filer.ReadDirectory(path, time)
 	if err != nil {
 		return nil, err
 	}
 
-	return readCompleteDirectory(transactionsInDirectory)
-}
-
-func readCompleteDirectory(directory *weedharvester.Directory) (model.Transactions, error) {
 	transactions := model.Transactions{}
 
-	for _, file := range directory.Files {
-		reader, err := filer.Read(file.Name, directory.Directory)
-		if err != nil {
-			return nil, err
-		}
-		transaction, err := parseTransaction(reader)
+	for rows.Next() {
+		current := model.Transaction{}
+		accountRecipient := model.NoBalanceAccount{}
+		accountSender := model.NoBalanceAccount{}
+
+		err := rows.Scan(&accountRecipient.Name, &accountRecipient.BIC, &accountRecipient.IBAN,
+			&accountSender.Name, &accountSender.BIC, &accountSender.IBAN,
+			&current.ValueInSmallestUnit, &current.Currency, &current.BookingDate, &current.IntendedUse)
+
 		if err != nil {
 			return nil, err
 		}
 
-		transactions = append(transactions, transaction)
+		current.Recipient = accountRecipient
+		current.Sender = accountSender
+
+		if err != nil {
+			return nil, err
+		}
+
+		transactions = append(transactions, &current)
 	}
 
 	return transactions, nil
 }
 
-func parseTransaction(reader io.Reader) (*model.Transaction, error) {
-	transaction := model.Transaction{}
-
-	if err := json.NewDecoder(reader).Decode(&transaction); err != nil {
-		return nil, err
+func DeletePendingTransactions(transactions model.Transactions) error {
+	for _, transaction := range transactions {
+		err := DeletePendingTransactionForAccount(transaction.Recipient.BIC, transaction.Recipient.IBAN, transaction.BookingDate)
+		if err != nil {
+			return err
+		}
 	}
 
-	return &transaction, nil
+	return nil
+}
+
+func DeletePendingTransactionForAccount(bic string, iban string, bookingDate time.Time) error {
+	_, err := Connection.Exec(
+		`DELETE FROM latestTransaction WHERE
+		recipientBic = $1 AND recipientIban = $2 AND
+		bookingDate = $3`,
+		bic,
+		iban,
+		bookingDate)
+
+	return err
 }
