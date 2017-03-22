@@ -14,8 +14,6 @@ import (
 	"github.com/ChristianNorbertBraun/seaweed-banking/seaweed-banking-backend/model"
 )
 
-type postTransaction func(transaction model.Transaction) error
-
 // ReadAccount returns for a given bic and iban an account or an error if there
 // is no matching account
 func ReadAccount(bic string, iban string) (*model.Account, error) {
@@ -60,7 +58,7 @@ func ReadAccounts() ([]*model.Account, error) {
 //
 // If the the transaction value would make the account balance go below zero
 // there will be returned an error an the transaction will be canceled
-func UpdateAccountBalance(transaction model.Transaction, afterUpdate postTransaction) error {
+func UpdateAccountBalance(transaction model.Transaction) error {
 	account := model.Account{}
 	tx, err := Connection.Begin()
 	if err != nil {
@@ -92,7 +90,29 @@ func UpdateAccountBalance(transaction model.Transaction, afterUpdate postTransac
 		return err
 	}
 
-	err = afterUpdate(transaction)
+	_, err = tx.Exec(`INSERT INTO 
+		latestTransaction(
+			recipientName,
+			recipientBic,
+			recipientIban,
+			senderName,
+			senderBic,
+			senderIban,
+			valueInSmallestUnit,
+			currency,
+			bookingDate,
+			intendedUse) VALUES
+			($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+		transaction.Recipient.Name,
+		transaction.Recipient.BIC,
+		transaction.Recipient.IBAN,
+		transaction.Sender.Name,
+		transaction.Sender.BIC,
+		transaction.Sender.IBAN,
+		transaction.ValueInSmallestUnit,
+		string(transaction.Currency),
+		transaction.BookingDate,
+		transaction.IntendedUse)
 
 	return err
 }

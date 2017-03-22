@@ -1,19 +1,11 @@
 package handler
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 
 	"time"
 
-	"errors"
-
-	"bytes"
-
-	"encoding/json"
-
-	"github.com/ChristianNorbertBraun/seaweed-banking/seaweed-banking-backend/config"
 	"github.com/ChristianNorbertBraun/seaweed-banking/seaweed-banking-backend/database"
 	"github.com/ChristianNorbertBraun/seaweed-banking/seaweed-banking-backend/model"
 	"github.com/pressly/chi/render"
@@ -34,50 +26,19 @@ func CreateTransactionAndUpdateBalance(w http.ResponseWriter, r *http.Request) {
 		log.Println("Transaction is not valid: ", transaction)
 		render.Status(r, http.StatusBadRequest)
 		render.JSON(w, r, http.StatusText(http.StatusBadRequest))
-	} else {
 
-		if err := database.UpdateAccountBalance(transaction, createTransactionInDFS); err != nil {
-			render.Status(r, http.StatusBadRequest)
-			log.Println("Error  while creating transaction: ", err.Error())
-			render.JSON(w, r, err.Error())
-		}
-
-		render.Status(r, http.StatusCreated)
-		render.JSON(w, r, transaction)
-	}
-}
-
-func createTransactionInDFS(transaction model.Transaction) error {
-
-	if err := sendTransactionToUpdater(transaction); err != nil {
-		return err
-	}
-	if err := database.CreateTransaction(transaction); err != nil {
-		return err
+		return
 	}
 
-	return nil
-}
+	if err := database.UpdateAccountBalance(transaction); err != nil {
+		render.Status(r, http.StatusBadRequest)
+		log.Println("Error  while creating transaction: ", err.Error())
+		render.JSON(w, r, err.Error())
 
-func sendTransactionToUpdater(transaction model.Transaction) error {
-	buffer := bytes.Buffer{}
-
-	url := fmt.Sprintf("%s:%s/updates",
-		config.Configuration.Updater.Host,
-		config.Configuration.Updater.Port)
-
-	if err := json.NewEncoder(&buffer).Encode(transaction); err != nil {
-		return err
-	}
-	response, err := http.Post(url, "application/json", &buffer)
-
-	if err != nil {
-		return err
+		return
 	}
 
-	if response.StatusCode >= 300 {
-		return errors.New("Bad Statuscode while sending transaction update")
-	}
+	render.Status(r, http.StatusCreated)
+	render.JSON(w, r, transaction)
 
-	return nil
 }
