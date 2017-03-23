@@ -9,8 +9,7 @@ import (
 // Config represents the configuration
 type Config struct {
 	Db struct {
-		URL    string `json:"url"`
-		DBName string `json:"dbname"`
+		URL string `json:"url"`
 	} `json:"db"`
 	Server struct {
 		Host string `json:"host"`
@@ -21,9 +20,9 @@ type Config struct {
 		Port string `json:"port"`
 	} `json:"master"`
 	Seaweed struct {
-		FilerURL      string `json:"filerUrl"`
-		AccountFolder string `json:"accountFolder"`
-		BookFolder    string `json:"bookFolder"`
+		FilerURL                      string `json:"filerUrl"`
+		AccountFolder                 string `json:"accountFolder"`
+		MaxTransactionsPerAccountInfo int    `json:"maxTransactionsPerAccountInfo"`
 	} `json:"seaweed"`
 }
 

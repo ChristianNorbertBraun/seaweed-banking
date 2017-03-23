@@ -1,8 +1,12 @@
 package model
 
-import "sync"
-import "sort"
-import "time"
+import (
+	"sort"
+	"sync"
+	"time"
+
+	"github.com/ChristianNorbertBraun/seaweed-banking/seaweed-banking-account-updater/config"
+)
 
 // AccountInfo holds all information for an account from the oldest to
 // the latest transaction
@@ -18,10 +22,6 @@ type AccountInfo struct {
 	mutex             sync.Mutex
 }
 
-// MaxTransactionsPerAccountInfo represents the maximum number of transaction stored
-// within a single AccountInfo
-const MaxTransactionsPerAccountInfo = 50
-
 // NewAccountInfo creates a new accountInfo
 func NewAccountInfo(name string, bic string, iban string, balance int32, predeccessor string) *AccountInfo {
 	accountInfo := AccountInfo{Name: name, BIC: bic, IBAN: iban, Balance: balance, Predeccessor: predeccessor}
@@ -35,7 +35,7 @@ func NewAccountInfo(name string, bic string, iban string, balance int32, predecc
 func (ai *AccountInfo) AddTransaction(transaction *Transaction) (bool, *AccountInfo) {
 	ai.mutex.Lock()
 	defer ai.mutex.Unlock()
-	if ai.Transactions.Len() < MaxTransactionsPerAccountInfo {
+	if ai.Transactions.Len() < config.Configuration.Seaweed.MaxTransactionsPerAccountInfo {
 		ai.Transactions = append(ai.Transactions, transaction)
 		ai.Balance += transaction.ValueInSmallestUnit
 		sort.Sort(ai.Transactions)

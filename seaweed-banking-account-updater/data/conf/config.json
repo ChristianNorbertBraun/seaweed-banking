@@ -13,6 +13,6 @@
     "seaweed": {
         "filerUrl": "http://docker:8888",
         "accountFolder": "accounts",
-        "bookFolder": "books"
+        "maxTransactionsPerAccountInfo": 50
     }
 }
