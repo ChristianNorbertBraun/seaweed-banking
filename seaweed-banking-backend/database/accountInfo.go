@@ -68,7 +68,7 @@ func GetAccountInfoFromTo(bic string, iban string, from time.Time, to time.Time)
 		return nil, err
 	}
 
-	predeccessorAccountInfo, err := GetAccountInfo(bic, iban, accountInfos[0].Predeccessor)
+	predecessorAccountInfo, err := GetAccountInfo(bic, iban, accountInfos[0].Predecessor)
 	if err != nil && err != ErrEmptyID {
 		return nil, err
 	} else if err == ErrEmptyID {
@@ -77,7 +77,7 @@ func GetAccountInfoFromTo(bic string, iban string, from time.Time, to time.Time)
 		return accountInfo, nil
 	}
 
-	accountInfos = append([]*model.AccountInfo{predeccessorAccountInfo}, accountInfos...)
+	accountInfos = append([]*model.AccountInfo{predecessorAccountInfo}, accountInfos...)
 	accountInfo = createAccountInfoFromListOfAccountInfos(accountInfos, from, to)
 
 	return accountInfo, nil
@@ -115,7 +115,7 @@ func GetAccountInfoFrom(bic string, iban string, from time.Time) (*model.Account
 		return nil, err
 	}
 
-	predeccessorAccountInfo, err := GetAccountInfo(bic, iban, accountInfos[0].Predeccessor)
+	predecessorAccountInfo, err := GetAccountInfo(bic, iban, accountInfos[0].Predecessor)
 	if err != nil && err != ErrEmptyID {
 		return nil, err
 	} else if err == ErrEmptyID {
@@ -124,7 +124,7 @@ func GetAccountInfoFrom(bic string, iban string, from time.Time) (*model.Account
 		return accountInfo, nil
 	}
 
-	accountInfos = append([]*model.AccountInfo{predeccessorAccountInfo}, accountInfos...)
+	accountInfos = append([]*model.AccountInfo{predecessorAccountInfo}, accountInfos...)
 	accountInfo = createAccountInfoFromListOfAccountInfos(accountInfos, from, time.Time{})
 
 	return accountInfo, nil

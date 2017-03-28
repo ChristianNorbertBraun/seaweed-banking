@@ -15,7 +15,7 @@ type AccountInfo struct {
 	BIC               string       `json:"bic"`
 	IBAN              string       `json:"iban"`
 	Balance           int32        `json:"balance"`
-	Predeccessor      string       `json:"predeccessor"`
+	Predecessor       string       `json:"predecessor"`
 	OldestTransaction string       `json:"oldestTransaction"`
 	LatestTransaction string       `json:"latestTransaction"`
 	Transactions      Transactions `json:"transactions"`
@@ -23,8 +23,8 @@ type AccountInfo struct {
 }
 
 // NewAccountInfo creates a new accountInfo
-func NewAccountInfo(name string, bic string, iban string, balance int32, predeccessor string) *AccountInfo {
-	accountInfo := AccountInfo{Name: name, BIC: bic, IBAN: iban, Balance: balance, Predeccessor: predeccessor}
+func NewAccountInfo(name string, bic string, iban string, balance int32, predecessor string) *AccountInfo {
+	accountInfo := AccountInfo{Name: name, BIC: bic, IBAN: iban, Balance: balance, Predecessor: predecessor}
 	accountInfo.Transactions = []*Transaction{}
 
 	return &accountInfo

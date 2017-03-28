@@ -9,7 +9,7 @@ type AccountInfo struct {
 	BIC               string         `json:"bic"`
 	IBAN              string         `json:"iban"`
 	Balance           int32          `json:"balance"`
-	Predeccessor      string         `json:"predeccessor,omitempty"`
+	Predecessor       string         `json:"predecessor,omitempty"`
 	OldestTransaction string         `json:"oldestTransaction,omitempty"`
 	LatestTransaction string         `json:"latestTransaction,omitempty"`
 	Transactions      []*Transaction `json:"transactions"`
