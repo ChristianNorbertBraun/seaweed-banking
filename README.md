@@ -53,24 +53,25 @@ Normaly you will only communicate with the seaweed-banking-backend.
 
 ```
 // create account
-curl --data '{"bic": "1234","iban": "iban1234","balance": 123}' localhost:3333/accounts
+curl --data '{"name":"Testuser","bic": "1234","iban": "iban1234","balance": 123}' localhost:3333/accounts
 
 // create transactions
- curl --data '{"iban": "iban1234","bic": "1234","currency": "EUR","valueInSmallestUnit": 100,"intendedUse": "MoneyMoney"}' localhost:3333/accounts/1234/iban1234/transactions
+ curl --data '{"recipient":{"name":"Testuser","bic": "1234","iban": "iban1234"}, "sender": {"name":"Testuser2","bic": "12345","iban": "iban12345"} ,"currency": "EUR","valueInSmallestUnit": 100,"intendedUse": "MoneyMoney"}' localhost:3333/accounts/1234/iban1234/transactions
 
 // read accountinfo
 curl localhost:3333/accounts/1234/iban1234/transactions?from=2017-02-16_13:05:00
 ```
 
- ## testing
-at seaweed-banking you can either execute startTest.sh for automate integration testing, or use startSystem.sh to just automate system startup and test manually at seaweed-backing-backend
+## Testing
+At seaweed-banking you can either execute startTest.sh for automate integration testing, or use startSystem.sh to just automate system startup and test manually at seaweed-backing-backend
 
 for testing manually several flags can configure the testing behaviour
 
-execute go test
+execute `go test`
 
 and optional:
 
+```
 // additional log information
 -v 
 
@@ -89,6 +90,32 @@ and optional:
 
  // It is also possible to set a fixed benchmark time; for time type e.g. 5s
  go test -v -short -bench={FunctionName or .} -benchtime={time}
+
+```
+
+## Performance
+
+Running the `main.go` within the /performance-seaweed-banking folder will run some performance tests against a running seaweed-banking-backend.
+
+```
+// Run go run main.go -h for help
+ -cookie int
+    	Random cookie
+  -duration duration
+    	Number of seconds the test should run (default 10s)
+  -goroutines int
+    	Number of goroutines (default 2)
+  -noWaiting
+    	No wating for updater
+  -server string
+    	The address of the seaweed-banking-backend (default "http://localhost:3333")
+  -transactions int
+    	Number of transactions created per account (default 50)
+  -waiting duration
+    	Time to wait for updater (default 20s)
+
+```
+
 
 
 

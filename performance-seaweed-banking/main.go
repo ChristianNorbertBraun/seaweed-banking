@@ -4,7 +4,7 @@ import (
 	"flag"
 	"math/rand"
 
-	"github.com/ChristianNorbertBraun/performance-seaweed-banking/tester"
+	"github.com/ChristianNorbertBraun/seaweed-banking/performance-seaweed-banking/tester"
 
 	"log"
 	"time"
