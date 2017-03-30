@@ -15,7 +15,7 @@ and merges them into an account info file.
 
 ## Getting started
 
-1. Start postgres, seaweedfs and mongodb
+1. Start postgres and seaweedfs
 ```
 docker-compose up
 ```
